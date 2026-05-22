@@ -38,6 +38,7 @@ jobs:
         shell: bash
         run: |
           export HOME="$RUNNER_TEMP/home"
+          export PATH="$HOME/.local/bin:$PATH"
           mkdir -p "$HOME"
           ./setup-linux.sh --agent both
           ./verify-linux.sh

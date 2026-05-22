@@ -178,6 +178,22 @@ function Install-WinGetPackage {
     if ($LASTEXITCODE -ne 0) {
         throw "winget failed to install $DisplayName ($Id) with exit code $LASTEXITCODE."
     }
+
+    if (-not (Test-Command $Command)) {
+        $roots = @(
+            (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'),
+            $env:ProgramFiles,
+            ${env:ProgramFiles(x86)}
+        ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
+
+        foreach ($root in $roots) {
+            $exe = Get-ChildItem -LiteralPath $root -Recurse -Filter "$Command.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($exe) {
+                Add-SessionPath $exe.DirectoryName
+                break
+            }
+        }
+    }
 }
 
 function Install-BunGlobal {
