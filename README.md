@@ -31,6 +31,8 @@ On Linux, `AGENTS.linux-arch.md` is included only when `/etc/os-release` reports
 
 Review the scripts before running remote bootstrap commands. These commands download code and execute it locally.
 
+Remote bootstrap defaults to the commit from the latest successful GitHub Actions smoke run triggered by a `ci-*` tag. To test a branch explicitly, set `REF` and `REF_KIND=branch` on Linux or `-Ref` and `-RefKind branch` on Windows.
+
 Windows interactive setup:
 
 ```powershell
@@ -59,6 +61,16 @@ Set the Linux target agent non-interactively:
 curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | AGENT=claude bash
 ```
 
+Test a branch instead of the latest tested tag:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | REF=main REF_KIND=branch bash
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.ps1))) -Ref main -RefKind branch
+```
+
 ## Windows
 
 Windows is the full interactive setup. It can:
@@ -71,6 +83,8 @@ Windows is the full interactive setup. It can:
 - write PowerShell profile blocks
 
 PowerShell profile writing is interactive. The base profile block adds PATH entries, zoxide, and helper functions. A second prompt asks whether to enable recommended Unix-style aliases such as `ls -> eza`, `grep -> rg`, and safe `rm -> trash`; the default is yes.
+
+Kimi WebBridge installation is also offered by default and can be declined interactively. It downloads and executes Kimi's current installer, and browser extension/profile access may be required for full browser automation.
 
 `-Yes` accepts every setup prompt, including prompts whose interactive default is no. Use it only when you want the full install path:
 
@@ -143,6 +157,16 @@ pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
 ```
 
 On Arch-like systems, install `powershell-bin` for repository development and script validation. Prefer the binary package over the source-build `powershell` AUR package.
+
+GitHub Actions runs smoke tests on Ubuntu and Windows when a `ci-*` tag is pushed. To publish a tested bootstrap target, push a local tag such as:
+
+```bash
+tag="ci-$(date -u +%Y%m%d%H%M%S)"
+git tag "$tag"
+git push origin "$tag"
+```
+
+Remote bootstrap uses the newest successful `ci-*` tag run by default.
 
 ## Agent Targets
 

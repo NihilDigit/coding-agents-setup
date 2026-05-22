@@ -16,7 +16,7 @@ Linux bootstrap usage such as:
 curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | bash
 ```
 
-downloads a repository archive and runs `setup-linux.sh`. The Linux setup writes agent Markdown files and user-local helpers such as `~/.local/bin/clip-run`; it does not install system packages or edit shell profiles.
+downloads a repository archive and runs `setup-linux.sh`. By default the bootstrap downloads the commit from the latest successful smoke-test run triggered by a `ci-*` tag; branch testing requires an explicit `REF`/`REF_KIND` override. The Linux setup writes agent Markdown files and user-local helpers such as `~/.local/bin/clip-run`; it does not install system packages or edit shell profiles.
 
 Persistent files overwritten by setup are backed up first. Linux writes adjacent `*.bak-<timestamp>` files for agent rules and `clip-run`. Windows writes backups under `~/.coding-agents-backup-<timestamp>` before replacing agent rules, PowerShell profiles, setup selection state, or `rtk.exe`; existing Claude skills links/directories are moved aside with an `.old-<timestamp>` suffix.
 
@@ -26,6 +26,6 @@ The Kimi WebBridge installer uses the vendor's current PowerShell installer:
 irm https://cdn.kimi.com/webbridge/install.ps1 | iex
 ```
 
-The setup script keeps this behind an explicit prompt and prints a warning before running it.
+The setup script keeps this behind an explicit prompt with default yes and prints a warning before running it.
 
 Agent Skills installed with `bunx skills add <repo>` are also downloaded from GitHub repositories. Review the repository URLs before installing skills on untrusted networks.

@@ -30,3 +30,5 @@ Keep helper functions for `which`, `touch`, `open`, `head`, `tail`, `less`, `wc`
 Do not enable Starship by default on this Windows profile. Its PowerShell initialization is too expensive for the current shell startup path.
 
 Install RTK from `rtk-ai/rtk` when token-heavy command output should be compacted. Verify the expected binary with `rtk gain`; this distinguishes it from unrelated packages that also use the `rtk` name.
+
+Kimi WebBridge is offered by default during Windows setup because it is useful for real-browser automation. The prompt must clearly state that it downloads and executes Kimi's installer and may need browser extension or profile access; the user can opt out interactively.

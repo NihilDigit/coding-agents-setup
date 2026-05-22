@@ -423,8 +423,8 @@ if (-not $SkipTools) {
         Install-DefaultSkills
     }
 
-    if (Confirm-Step 'Install Kimi WebBridge? Downloads and executes the current installer from kimi.com; browser extension required for full automation.' $false) {
-        Add-SelectedCommand 'kimi-webbridge'
+    if (Confirm-Step 'Install Kimi WebBridge? Default yes; downloads and executes the current installer from kimi.com, and browser extension/profile access may be required for full automation.' $true) {
+        Add-SelectedFeature 'kimi-webbridge'
         Install-KimiWebBridge
     }
 }

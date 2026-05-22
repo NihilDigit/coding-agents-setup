@@ -154,6 +154,14 @@ if ($state -and (@($state.SelectedFeatures) -contains 'default-skills')) {
     }
 }
 
+if ($state -and (@($state.SelectedFeatures) -contains 'kimi-webbridge')) {
+    if ((Get-Command kimi-webbridge -ErrorAction SilentlyContinue) -or (Get-Command webbridge -ErrorAction SilentlyContinue)) {
+        Ok 'Kimi WebBridge command is available'
+    } else {
+        Fail 'Kimi WebBridge was selected but neither kimi-webbridge nor webbridge is available'
+    }
+}
+
 $profilePaths = @(
     (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Microsoft.PowerShell_profile.ps1'),
     (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Microsoft.PowerShell_profile.ps1')

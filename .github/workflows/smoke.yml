@@ -1,0 +1,60 @@
+name: Smoke
+
+on:
+  push:
+    tags:
+      - 'ci-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu:
+    name: Ubuntu smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax checks
+        shell: bash
+        run: |
+          bash -n setup-linux.sh install.sh verify-linux.sh scripts/clip-run
+          pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Linux smoke dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git ripgrep fd-find bat jq trash-cli curl
+          curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run Linux setup and verify configured behavior
+        shell: bash
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          mkdir -p "$HOME"
+          ./setup-linux.sh --agent both
+          ./verify-linux.sh
+
+  windows:
+    name: Windows smoke
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax checks
+        shell: pwsh
+        run: |
+          pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
+
+      - name: Run Windows setup and verify configured behavior
+        shell: pwsh
+        run: |
+          ./setup-windows.ps1 -Agent Both -NonInteractive
+          ./verify-windows.ps1

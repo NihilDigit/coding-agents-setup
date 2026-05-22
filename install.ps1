@@ -11,14 +11,38 @@ param(
     [switch]$SkipTools,
     [switch]$SkipProfile,
     [string]$Repo = 'NihilDigit/coding-agents-setup',
-    [string]$Ref = 'main'
+    [string]$Ref = '',
+    [ValidateSet('sha', 'tag', 'branch')]
+    [string]$RefKind = 'sha'
 )
 
 $ErrorActionPreference = 'Stop'
 
 Write-Warning 'This bootstrap downloads and executes setup-windows.ps1 from GitHub. Review the repository before running it on a machine you care about.'
 
-$archiveUrl = "https://github.com/$Repo/archive/refs/heads/$Ref.zip"
+if ([string]::IsNullOrWhiteSpace($Ref)) {
+    $runs = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/actions/workflows/smoke.yml/runs?status=success&event=push&per_page=50"
+    $run = @($runs.workflow_runs | Where-Object { $_.head_branch -like 'ci-*' -and $_.head_sha } | Select-Object -First 1)
+    if (-not $run) {
+        throw "Could not determine latest successful ci-* tag for $Repo. Set -Ref and -RefKind explicitly."
+    }
+    $ciTag = $run[0].head_branch
+    $Ref = $run[0].head_sha
+    $RefKind = 'sha'
+}
+
+if ($RefKind -eq 'sha') {
+    if ($ciTag) {
+        Write-Host "Using latest successful CI tag $ciTag at $Ref from $Repo"
+    } else {
+        Write-Host "Using commit $Ref from $Repo"
+    }
+    $archiveUrl = "https://github.com/$Repo/archive/$Ref.zip"
+} else {
+    Write-Host "Using $RefKind $Ref from $Repo"
+    $refPath = if ($RefKind -eq 'tag') { 'tags' } else { 'heads' }
+    $archiveUrl = "https://github.com/$Repo/archive/refs/$refPath/$Ref.zip"
+}
 $tempRoot = Join-Path $env:TEMP ('coding-agents-setup-' + [guid]::NewGuid().ToString('N'))
 $zipPath = Join-Path $tempRoot 'repo.zip'
 $extractPath = Join-Path $tempRoot 'repo'
