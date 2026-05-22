@@ -36,12 +36,20 @@ jobs:
 
       - name: Run Linux setup and verify configured behavior
         shell: bash
+        timeout-minutes: 3
         run: |
           export HOME="$RUNNER_TEMP/home"
           export PATH="$HOME/.local/bin:$PATH"
           mkdir -p "$HOME"
           ./setup-linux.sh --agent both
           ./verify-linux.sh
+
+      - name: Run Linux behavior smoke
+        shell: bash
+        timeout-minutes: 2
+        run: |
+          export HOME="$RUNNER_TEMP/home"
+          export PATH="$HOME/.local/bin:$PATH"
           bash tests/Smoke-Linux.sh
 
   windows:
@@ -55,9 +63,20 @@ jobs:
         run: |
           pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
 
-      - name: Run Windows setup and verify configured behavior
+      - name: Run Windows setup
         shell: pwsh
+        timeout-minutes: 8
         run: |
           ./setup-windows.ps1 -Agent Both -NonInteractive
+
+      - name: Verify Windows configured behavior
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
           ./verify-windows.ps1
+
+      - name: Run Windows behavior smoke
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
           ./tests/Smoke-Windows.ps1
