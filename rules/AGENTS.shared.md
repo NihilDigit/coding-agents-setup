@@ -79,7 +79,11 @@ Do not use `rtk` when exact raw output is the artifact being inspected, copied, 
 
 ## Browser Use
 
-For current web facts, use browser/search tooling and cite sources. For local browser automation, use the `kimi-webbridge` skill and prefer Kimi WebBridge when installed: it drives the user's real Chrome/Edge session for navigation, clicks, forms, screenshots, and page extraction. Keep browser actions read-only by default, and ask before submitting forms, changing settings, sending messages, deleting data, purchasing, or touching account-sensitive state.
+Kimi WebBridge can give the agent direct access to the user's real browser. It can read and interact with web pages from the user's perspective, including logged-in sessions, browser state, page UI, form fields, screenshots, and publish flows.
+
+Use Kimi WebBridge when the task depends on the user's browser context: logged-in pages, account-specific state, dynamic UI, form workflows, drafts for user review, screenshots, or any page state that ordinary search results cannot represent reliably. Use ordinary web/search tooling for public facts that do not need the user's browser state.
+
+Keep browser actions read-only by default. Filling a draft is acceptable when the user asks for it, but stop before submitting forms, posting content, changing settings, sending messages, deleting data, purchasing, or touching account-sensitive state unless the user explicitly confirms the final action.
 
 Official references:
 

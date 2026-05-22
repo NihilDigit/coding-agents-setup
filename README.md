@@ -1,12 +1,14 @@
 # Coding Agents Setup
 
-Shared setup files for local coding agents. The scripts compose small rule fragments into the right user-level files for Codex and Claude, with platform-specific behavior kept separate.
+A modern local toolchain setup for coding agents. It installs or writes user-level configuration for Codex and Claude, with Windows and Linux behavior kept separate.
 
 ## TL;DR
 
-This is a personal coding-agent setup pipeline, shaped by the practices I have found useful while working with Codex, Claude, and local developer tools. It is opinionated, but meant to be inspectable and reusable.
+This repo turns local coding-agent conventions into installable rule files and setup scripts: available tools, package-manager preferences, file deletion behavior, operations that require user confirmation, and platform differences.
 
-It installs or writes only user-level configuration, backs up managed files before replacing them, and keeps Windows/Linux behavior split instead of forcing one shared setup path. If those tradeoffs match how you work, it may be useful as-is or as a starting point.
+It has a clear preference for newer tools: `uv` for Python, `bun` for JavaScript/TypeScript, and command-line replacements such as `rg`, `fd`, and `eza`.
+
+Managed config files are backed up before replacement. CI runs installation and behavior smoke checks on Ubuntu and Windows, which gives a basic reliability check but cannot cover every local environment.
 
 ## Install
 
@@ -48,11 +50,11 @@ curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main
 
 ## Windows
 
-Windows is the full interactive setup. It can install developer tools, `rtk`, JS `trash-cli`, Agent Skills, Kimi WebBridge, Codex/Claude rules, and PowerShell profile blocks.
+Windows is the full interactive setup. It can install the toolchain, write Codex/Claude rule files, write a PowerShell profile, make `rm` send files to the Recycle Bin, set up Agent Skills directories, install `rtk`, and optionally install Kimi WebBridge.
 
 PowerShell profile writing is interactive. The default profile adds PATH entries and helper functions. A second prompt enables Unix-style aliases, including safe `rm -> trash` shadowing; the default is yes.
 
-Kimi WebBridge is offered by default and can be declined. It downloads and executes Kimi's current installer, and browser extension/profile access may be required for full browser automation.
+Kimi WebBridge is offered by default and can be declined. It downloads and executes Kimi's current installer, and browser extension/profile access may be required for browser automation.
 
 `-Yes` accepts every setup prompt, including prompts whose interactive default is no:
 
@@ -68,11 +70,13 @@ Rules only:
 
 ## Linux
 
-Linux setup is intentionally lighter. It writes agent rule files, installs `~/.local/bin/clip-run`, and includes a temporary first-run task for the agent to inspect the machine and ask what to configure.
+Linux distributions and desktop environments vary too much for one fixed install flow. The Linux setup writes rule files first, installs `~/.local/bin/clip-run`, and includes a temporary first-run task for the agent to inspect the machine and ask what to configure.
 
 It does not install system packages or modify shell profiles.
 
 On Arch-like systems, generated rules add Arch-specific guidance: use `paru -S` or `sudo pacman -S`, prefer `*-bin` AUR packages when available, use system `trash-cli`, and configure sudoers narrowly for `/usr/bin/pacman` and `/usr/bin/paru`.
+
+`clip-run` is used when an agent needs user confirmation or `sudo`: it writes a script to `/tmp` and copies the command for the user to run manually.
 
 After the first Linux setup pass, delete the temporary `Linux Initial Setup Task` section from the generated agent file.
 
