@@ -22,6 +22,24 @@ function Require-Command {
     Ok "$Name -> $($cmd.Source)"
 }
 
+function Invoke-ExternalWithTimeout {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$ArgumentList,
+        [Parameter(Mandatory = $true)][int]$TimeoutSeconds,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+
+    $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -NoNewWindow -PassThru
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        throw "$Label timed out after $TimeoutSeconds seconds"
+    }
+    if ($process.ExitCode -ne 0) {
+        throw "$Label failed with exit code $($process.ExitCode)"
+    }
+}
+
 foreach ($cmd in @('git', 'uv', 'uvx', 'bun', 'bunx', 'trash', 'rtk')) {
     Require-Command $cmd
 }
@@ -52,10 +70,9 @@ if ((Get-Command trash -ErrorAction SilentlyContinue) -and ((Get-Command rm).Def
 }
 '@
 
-pwsh -NoLogo -Command $profileProbe
-if ($LASTEXITCODE -ne 0) {
-    throw "fresh PowerShell profile behavior smoke failed with exit code $LASTEXITCODE"
-}
+$profileProbePath = Join-Path $env:TEMP ('coding-agents-profile-smoke-' + [guid]::NewGuid().ToString('N') + '.ps1')
+Set-Content -LiteralPath $profileProbePath -Value $profileProbe -Encoding UTF8
+Invoke-ExternalWithTimeout -FilePath (Get-Command pwsh).Source -ArgumentList @('-NoLogo', '-File', $profileProbePath) -TimeoutSeconds 30 -Label 'fresh PowerShell profile behavior smoke'
 Ok 'fresh PowerShell session loads rm-to-trash shadowing'
 
 if ($state -and (@($state.SelectedFeatures) -contains 'kimi-webbridge')) {
@@ -69,10 +86,12 @@ if ($state -and (@($state.SelectedFeatures) -contains 'kimi-webbridge')) {
 
     $statusOk = $false
     for ($i = 0; $i -lt 3; $i++) {
-        & $kimi.Source status
-        if ($LASTEXITCODE -eq 0) {
+        try {
+            Invoke-ExternalWithTimeout -FilePath $kimi.Source -ArgumentList @('status') -TimeoutSeconds 15 -Label 'Kimi WebBridge status'
             $statusOk = $true
             break
+        } catch {
+            Write-Warning $_.Exception.Message
         }
         Start-Sleep -Seconds 2
     }
