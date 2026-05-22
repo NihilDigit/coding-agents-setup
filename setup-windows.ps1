@@ -25,6 +25,7 @@ $SetupState = [ordered]@{
     SelectedCommands = @()
     SelectedFeatures = @()
     ProfileSelected = $false
+    UnixAliasesSelected = $false
 }
 
 function Test-Command {
@@ -307,9 +308,17 @@ function Install-Rtk {
 }
 
 function Write-PowerShellProfiles {
+    param([bool]$IncludeUnixAliases = $true)
+
     $profileBlockPath = Join-Path $ScriptRoot 'profiles\Microsoft.PowerShell_profile.block.ps1'
     if (-not (Test-Path -LiteralPath $profileBlockPath)) { throw "Missing profile block: $profileBlockPath" }
     $profileBlock = (Get-Content -LiteralPath $profileBlockPath -Raw).TrimEnd()
+    $aliasBlock = ''
+    if ($IncludeUnixAliases) {
+        $aliasBlockPath = Join-Path $ScriptRoot 'profiles\Microsoft.PowerShell_profile.aliases.ps1'
+        if (-not (Test-Path -LiteralPath $aliasBlockPath)) { throw "Missing profile alias block: $aliasBlockPath" }
+        $aliasBlock = (Get-Content -LiteralPath $aliasBlockPath -Raw).TrimEnd()
+    }
 
     $profiles = @(
         (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Microsoft.PowerShell_profile.ps1'),
@@ -322,8 +331,12 @@ function Write-PowerShellProfiles {
         $backup = Backup-Path $profilePath
         if ($backup) { Write-Host "Backed up $profilePath -> $backup" }
         $content = [regex]::Replace($content, '(?s)\r?\n?# BEGIN (Codex CLI|Coding Agents) ergonomics.*?# END (Codex CLI|Coding Agents) ergonomics\r?\n?', "`n")
+        $content = [regex]::Replace($content, '(?s)\r?\n?# BEGIN Coding Agents Unix aliases.*?# END Coding Agents Unix aliases\r?\n?', "`n")
         $content = $content.TrimEnd()
-        $newContent = if ($content) { $content + "`n`n" + $profileBlock + "`n" } else { $profileBlock + "`n" }
+        $blocks = @($profileBlock)
+        if ($aliasBlock) { $blocks += $aliasBlock }
+        $newBlock = $blocks -join "`n`n"
+        $newContent = if ($content) { $content + "`n`n" + $newBlock + "`n" } else { $newBlock + "`n" }
         Set-TextFileLf -Path $profilePath -Text $newContent
         Write-Host "Wrote $profilePath"
     }
@@ -418,7 +431,12 @@ if (-not $SkipTools) {
 
 if (-not $SkipProfile -and (Confirm-Step 'Write PowerShell aliases/functions profile block?' $true)) {
     $SetupState.ProfileSelected = $true
-    Write-PowerShellProfiles
+    $includeUnixAliases = Confirm-Step 'Enable recommended Unix-style PowerShell aliases, including safe rm-to-trash shadowing?' $true
+    $SetupState.UnixAliasesSelected = $includeUnixAliases
+    if ($includeUnixAliases) {
+        Add-SelectedFeature 'windows-unix-aliases'
+    }
+    Write-PowerShellProfiles -IncludeUnixAliases $includeUnixAliases
 }
 
 Write-SetupState

@@ -8,7 +8,9 @@ Tool installation and updates may run non-interactively when the user selected t
 
 ## Windows Shell Defaults
 
-On Windows, keep PowerShell ergonomic for Unix habits:
+On Windows, the setup script asks whether to enable recommended Unix-style aliases. The default is yes, including `rm` shadowing for safer deletion. If the user declines that prompt, only the base PATH/helper profile block is written.
+
+When enabled, keep PowerShell ergonomic for Unix habits:
 
 - `ls` -> `eza --icons=auto`
 - `ll` -> `eza --icons=auto -la`

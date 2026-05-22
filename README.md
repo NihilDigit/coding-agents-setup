@@ -24,7 +24,7 @@ The shared fragment contains behavior that should apply to any coding agent: wor
 
 ## Install
 
-Windows is the full interactive setup. It can install tools, write PowerShell profile helpers, configure skills layout, and write agent rules:
+Windows is the full interactive setup. It can install tools, write PowerShell profile helpers, configure skills layout, and write agent rules. When writing the PowerShell profile, it asks whether to enable recommended Unix-style aliases such as `ls -> eza`, `grep -> rg`, and safe `rm -> trash`; the default is yes.
 
 ```powershell
 irm https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.ps1 | iex

@@ -5,7 +5,8 @@ $psFiles = @(
     (Join-Path $root 'setup-windows.ps1')
     (Join-Path $root 'install.ps1')
     (Join-Path $root 'verify-windows.ps1')
-    Join-Path $root 'profiles\Microsoft.PowerShell_profile.block.ps1'
+    (Join-Path $root 'profiles\Microsoft.PowerShell_profile.block.ps1')
+    (Join-Path $root 'profiles\Microsoft.PowerShell_profile.aliases.ps1')
 )
 
 $shFiles = @(

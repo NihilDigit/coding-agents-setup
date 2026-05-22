@@ -165,6 +165,13 @@ if ((-not $state) -or $state.ProfileSelected) {
         } else {
             Fail "$profilePath does not contain Coding Agents profile block"
         }
+        if ($state -and $state.UnixAliasesSelected) {
+            if ((Test-Path -LiteralPath $profilePath -PathType Leaf) -and ((Get-Content -LiteralPath $profilePath -Raw) -like '*# BEGIN Coding Agents Unix aliases*')) {
+                Ok "$profilePath contains Coding Agents Unix alias block"
+            } else {
+                Fail "$profilePath does not contain Coding Agents Unix alias block"
+            }
+        }
     }
 }
 
