@@ -17,6 +17,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$SetupState = [ordered]@{
+    GeneratedAt = (Get-Date).ToString('o')
+    Agent = $null
+    SkipTools = [bool]$SkipTools
+    SkipProfile = [bool]$SkipProfile
+    SelectedCommands = @()
+    SelectedFeatures = @()
+    ProfileSelected = $false
+}
 
 function Test-Command {
     param([Parameter(Mandatory = $true)][string]$Name)
@@ -36,6 +45,25 @@ function Confirm-Step {
     $answer = Read-Host "$Prompt $suffix"
     if ([string]::IsNullOrWhiteSpace($answer)) { return $Default }
     return $answer.Trim().ToLowerInvariant().StartsWith('y')
+}
+
+function Add-SelectedCommand {
+    param([Parameter(Mandatory = $true)][string[]]$Name)
+    $SetupState.SelectedCommands = @($SetupState.SelectedCommands + $Name | Select-Object -Unique)
+}
+
+function Add-SelectedFeature {
+    param([Parameter(Mandatory = $true)][string[]]$Name)
+    $SetupState.SelectedFeatures = @($SetupState.SelectedFeatures + $Name | Select-Object -Unique)
+}
+
+function Write-SetupState {
+    $stateDir = Join-Path $HOME '.coding-agents-setup'
+    $statePath = Join-Path $stateDir 'windows-selection.json'
+    New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+    $SetupState.GeneratedAt = (Get-Date).ToString('o')
+    $SetupState | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $statePath -Encoding UTF8
+    Write-Host "Wrote $statePath"
 }
 
 function Select-AgentTarget {
@@ -189,7 +217,7 @@ function Configure-SkillsLayout {
     if (Test-Path -LiteralPath $claudeSkills) {
         $item = Get-Item -LiteralPath $claudeSkills -Force
         if ($item.LinkType -eq 'SymbolicLink' -or $item.LinkType -eq 'Junction') {
-            Remove-Item -LiteralPath $claudeSkills -Force
+            Move-Item -LiteralPath $claudeSkills -Destination ($claudeSkills + '.old-' + (Get-Date -Format 'yyyyMMddHHmmss')) -Force
         } else {
             $backup = Backup-Path $claudeSkills
             if ($backup) { Write-Host "Backed up $claudeSkills -> $backup" }
@@ -235,6 +263,44 @@ function Install-KimiWebBridge {
     Add-SessionPath (Join-Path $HOME '.kimi-webbridge\bin')
 }
 
+function Install-Rtk {
+    if (Test-Command rtk) {
+        try {
+            rtk gain *> $null
+            Write-Host 'RTK appears to be installed.'
+            return
+        } catch {
+            Write-Warning 'A command named rtk exists, but it does not behave like rtk-ai/rtk.'
+        }
+    }
+    Write-Warning 'This downloads the current rtk-ai/rtk Windows release from GitHub and installs rtk.exe to ~/.local/bin.'
+    $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/rtk-ai/rtk/releases/latest'
+    $asset = $release.assets | Where-Object { $_.name -eq 'rtk-x86_64-pc-windows-msvc.zip' } | Select-Object -First 1
+    if (-not $asset) {
+        throw 'Could not find rtk-x86_64-pc-windows-msvc.zip in the latest rtk-ai/rtk release.'
+    }
+
+    $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ('rtk-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
+    $zipPath = Join-Path $tempDir 'rtk.zip'
+    Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath
+    Expand-Archive -LiteralPath $zipPath -DestinationPath $tempDir -Force
+    $rtkExe = Get-ChildItem -LiteralPath $tempDir -Recurse -Filter 'rtk.exe' | Select-Object -First 1
+    if (-not $rtkExe) {
+        throw 'Downloaded RTK archive did not contain rtk.exe.'
+    }
+
+    $binDir = Join-Path $HOME '.local\bin'
+    New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+    Copy-Item -LiteralPath $rtkExe.FullName -Destination (Join-Path $binDir 'rtk.exe') -Force
+    Add-SessionPath $binDir
+
+    & (Join-Path $binDir 'rtk.exe') gain *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Installed rtk.exe, but rtk gain failed.'
+    }
+}
+
 function Write-PowerShellProfiles {
     $profileBlockPath = Join-Path $ScriptRoot 'profiles\Microsoft.PowerShell_profile.block.ps1'
     if (-not (Test-Path -LiteralPath $profileBlockPath)) { throw "Missing profile block: $profileBlockPath" }
@@ -258,25 +324,31 @@ function Write-PowerShellProfiles {
 
 Write-Host 'Coding Agents Windows Setup'
 $targetAgent = Select-AgentTarget
+$SetupState.Agent = $targetAgent
 
 if ($targetAgent -ne 'None') {
+    Add-SelectedFeature 'agent-rules'
     Write-AgentRules -Target $targetAgent
 }
 
 if (-not $SkipTools) {
     if (Confirm-Step 'Ensure Git is installed?' $true) {
+        Add-SelectedCommand 'git'
         Install-WinGetPackage -Id 'Git.Git' -Command 'git' -DisplayName 'Git'
     }
 
     if (Confirm-Step 'Install GitHub CLI (gh)? Useful for authenticated GitHub workflows.' $false) {
+        Add-SelectedCommand 'gh'
         Install-WinGetPackage -Id 'GitHub.cli' -Command 'gh' -DisplayName 'GitHub CLI'
     }
 
     if (Confirm-Step 'Ensure uv is installed?' $true) {
+        Add-SelectedCommand @('uv', 'uvx')
         Install-WinGetPackage -Id 'astral-sh.uv' -Command 'uv' -DisplayName 'uv'
     }
 
     if (Confirm-Step 'Ensure Bun is installed?' $true) {
+        Add-SelectedCommand @('bun', 'bunx')
         Install-WinGetPackage -Id 'Oven-sh.Bun' -Command 'bun' -DisplayName 'Bun'
     }
 
@@ -286,14 +358,22 @@ if (-not $SkipTools) {
     Add-SessionPath 'C:\Program Files\bottom\bin'
 
     if (Confirm-Step 'Install Codex CLI with bun if missing?' ($targetAgent -eq 'Codex' -or $targetAgent -eq 'Both')) {
+        Add-SelectedCommand 'codex'
         Install-BunGlobal -Package '@openai/codex' -Command 'codex' -DisplayName 'Codex CLI'
     }
 
     if (Confirm-Step 'Install cross-platform trash CLI with bun if missing?' $true) {
+        Add-SelectedCommand 'trash'
         Install-BunGlobal -Package 'trash-cli' -Command 'trash' -DisplayName 'trash-cli'
     }
 
+    if (Confirm-Step 'Install RTK output-compaction CLI if missing?' $true) {
+        Add-SelectedCommand 'rtk'
+        Install-Rtk
+    }
+
     if (Confirm-Step 'Install modern CLI tools (eza, zoxide, bat, rg, fd, fzf, jq, dust, duf, procs, bottom, delta)?' $true) {
+        Add-SelectedCommand @('eza', 'zoxide', 'bat', 'rg', 'fd', 'fzf', 'jq', 'dust', 'duf', 'procs', 'btm', 'delta')
         $modernPackages = @(
             @{ Id = 'eza-community.eza'; Command = 'eza'; DisplayName = 'eza' },
             @{ Id = 'ajeetdsouza.zoxide'; Command = 'zoxide'; DisplayName = 'zoxide' },
@@ -314,20 +394,25 @@ if (-not $SkipTools) {
     }
 
     if (Confirm-Step 'Normalize Agent Skills layout (.agents as user skill store, .claude skills link, .codex skills directory)?' ($targetAgent -eq 'Claude' -or $targetAgent -eq 'Both')) {
+        Add-SelectedFeature 'skills-layout'
         Configure-SkillsLayout
     }
 
     if (Confirm-Step 'Install default Agent Skills (writing-style, impeccable)?' $true) {
+        Add-SelectedFeature 'default-skills'
         Install-DefaultSkills
     }
 
     if (Confirm-Step 'Install Kimi WebBridge? Downloads and executes the current installer from kimi.com; browser extension required for full automation.' $false) {
+        Add-SelectedCommand 'kimi-webbridge'
         Install-KimiWebBridge
     }
 }
 
 if (-not $SkipProfile -and (Confirm-Step 'Write PowerShell aliases/functions profile block?' $true)) {
+    $SetupState.ProfileSelected = $true
     Write-PowerShellProfiles
 }
 
+Write-SetupState
 Write-Host 'Coding Agents Windows Setup complete. Open a new PowerShell session to use updated aliases and PATH.'

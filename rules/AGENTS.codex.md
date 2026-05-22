@@ -4,4 +4,4 @@ Codex reads user-level defaults from `~/.codex/AGENTS.md`. Repository-local `AGE
 
 Let `~/.codex/skills` remain Codex-owned for system skills such as `.system`. Keep user-installed skills in `~/.agents/skills`.
 
-Codex normally runs with workspace-write sandboxing and approval review. On this Windows machine, use `windows.sandbox = "unelevated"` for ordinary non-admin sessions; use `elevated` only when Codex itself was launched from an elevated terminal.
+Codex sandboxing and approval behavior should match the local `~/.codex/config.toml` and the host OS. On Windows, use `windows.sandbox = "unelevated"` for ordinary non-admin sessions; use `elevated` only when Codex itself was launched from an elevated terminal.

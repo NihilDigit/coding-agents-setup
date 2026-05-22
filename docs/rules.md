@@ -24,8 +24,10 @@ Linux setup uses:
 
 ```text
 rules/AGENTS.shared.md
+rules/AGENTS.linux.md
+rules/AGENTS.linux-arch.md when `/etc/os-release` is Arch-like
 rules/AGENTS.codex.md or rules/CLAUDE.md
 rules/AGENTS.linux-initial-setup.md
 ```
 
-The Linux initial-setup fragment is intentionally temporary. It tells the agent to inspect the machine, ask the user which setup steps they want, and personalize the local environment. Delete it from the generated agent file after the first Linux setup pass.
+The Linux fragment contains stable platform defaults such as system `trash-cli`, `clip-run`, and RTK guidance. Arch-specific package-manager guidance lives in `AGENTS.linux-arch.md` and is only composed on Arch-like systems. The Linux initial-setup fragment is intentionally temporary. It tells the agent to inspect the machine, ask the user which setup steps they want, and personalize the local environment. Delete it from the generated agent file after the first Linux setup pass.

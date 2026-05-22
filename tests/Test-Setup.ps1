@@ -4,12 +4,15 @@ $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $psFiles = @(
     (Join-Path $root 'setup-windows.ps1')
     (Join-Path $root 'install.ps1')
+    (Join-Path $root 'verify-windows.ps1')
     Join-Path $root 'profiles\Microsoft.PowerShell_profile.block.ps1'
 )
 
 $shFiles = @(
     (Join-Path $root 'setup-linux.sh')
     (Join-Path $root 'install.sh')
+    (Join-Path $root 'verify-linux.sh')
+    (Join-Path $root 'scripts/clip-run')
 )
 
 foreach ($path in $psFiles) {

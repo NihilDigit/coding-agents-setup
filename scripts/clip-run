@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  clip-run <name>
+
+Reads a shell script from stdin, writes it to /tmp/<name>.sh, makes it executable,
+and copies "bash /tmp/<name>.sh" to the clipboard when a clipboard tool is available.
+USAGE
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || $# -ne 1 ]]; then
+  usage
+  if [[ $# -eq 1 && "${1:-}" =~ ^(-h|--help)$ ]]; then
+    exit 0
+  fi
+  exit 2
+fi
+
+name="$1"
+case "$name" in
+  *[!A-Za-z0-9._-]*|'')
+    echo "clip-run name may only contain letters, numbers, dot, underscore, and dash." >&2
+    exit 2
+    ;;
+esac
+
+path="/tmp/$name.sh"
+tmp="$(mktemp "/tmp/$name.XXXXXX")"
+cat > "$tmp"
+chmod 0755 "$tmp"
+mv -f -- "$tmp" "$path"
+
+cmd="bash $path"
+if command -v wl-copy >/dev/null 2>&1; then
+  printf '%s' "$cmd" | wl-copy
+  echo "Copied to clipboard: $cmd"
+elif command -v xclip >/dev/null 2>&1; then
+  printf '%s' "$cmd" | xclip -selection clipboard
+  echo "Copied to clipboard: $cmd"
+elif command -v xsel >/dev/null 2>&1; then
+  printf '%s' "$cmd" | xsel --clipboard --input
+  echo "Copied to clipboard: $cmd"
+elif command -v pbcopy >/dev/null 2>&1; then
+  printf '%s' "$cmd" | pbcopy
+  echo "Copied to clipboard: $cmd"
+else
+  echo "Clipboard tool not found. Run manually: $cmd"
+fi

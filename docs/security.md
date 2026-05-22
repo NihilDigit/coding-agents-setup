@@ -16,7 +16,7 @@ Linux bootstrap usage such as:
 curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | bash
 ```
 
-downloads a repository archive and runs `setup-linux.sh`. The Linux setup only writes agent Markdown files; it does not install packages or edit shell profiles.
+downloads a repository archive and runs `setup-linux.sh`. The Linux setup writes agent Markdown files and user-local helpers such as `~/.local/bin/clip-run`; it does not install system packages or edit shell profiles.
 
 The Kimi WebBridge installer uses the vendor's current PowerShell installer:
 

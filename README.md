@@ -7,6 +7,8 @@ The repo keeps the rules as small Markdown fragments, then writes the agent-spec
 ```text
 rules/AGENTS.shared.md
 rules/AGENTS.windows.md
+rules/AGENTS.linux.md
+rules/AGENTS.linux-arch.md
 rules/AGENTS.codex.md
 rules/CLAUDE.md
 ```
@@ -28,7 +30,7 @@ Windows is the full interactive setup. It can install tools, write PowerShell pr
 irm https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.ps1 | iex
 ```
 
-Linux is intentionally lighter. It only writes agent Markdown files and includes a temporary first-run task for the agent to inspect the machine and ask what to configure:
+Linux is intentionally lighter. It writes agent Markdown files, installs small user-local helpers such as `clip-run`, and includes a temporary first-run task for the agent to inspect the machine and ask what to configure:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | bash
@@ -80,7 +82,7 @@ The Windows bootstrap downloads the repository archive and runs `setup-windows.p
 
 Do not put machine-specific SDK inventories, device IDs, or project paths in shared rules. Keep those in a private local note or in the relevant project repository.
 
-The Windows installer configures tools and shell ergonomics. The Linux installer only writes agent Markdown files and leaves environment setup to the agent after it inspects the machine.
+The Windows installer configures tools and shell ergonomics. The Linux installer writes agent Markdown files, installs user-local helpers, and leaves system package setup to the agent after it inspects the machine.
 
 Linux has a deliberately small helper for cloned checkouts:
 
@@ -88,5 +90,23 @@ Linux has a deliberately small helper for cloned checkouts:
 ./setup-linux.sh --agent both
 ```
 
-It only writes agent rule files and includes a temporary bootstrap note in the generated Markdown. It does not install packages or modify shell profiles.
+It writes agent rule files, installs `~/.local/bin/clip-run`, and includes a temporary bootstrap note in the generated Markdown. It does not install system packages or modify shell profiles.
 The temporary Linux section is an instruction for the agent to inspect the machine, ask what to configure, and then personalize the setup locally.
+
+## Verify
+
+Linux verification is incremental by design:
+
+```bash
+./verify-linux.sh --feature trash
+./verify-linux.sh --command paru --feature arch-sudoers
+./verify-linux.sh
+```
+
+Windows verification reads the selection state written by `setup-windows.ps1` and checks the tools the user actually chose to install:
+
+```powershell
+.\verify-windows.ps1
+```
+
+Use `.\verify-windows.ps1 -Recommended` to also show warnings for recommended tools that were not selected.

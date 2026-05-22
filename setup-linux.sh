@@ -6,7 +6,7 @@ usage() {
 Usage:
   ./setup-linux.sh [--agent prompt|codex|claude|both|none]
 
-This script only writes agent rule files. It does not install packages or modify shell profiles.
+This script writes agent rule files and installs user-local Linux helpers. It does not install system packages or modify shell profiles.
 USAGE
 }
 
@@ -39,6 +39,31 @@ esac
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+install_linux_helpers() {
+  local bin_dir="$HOME/.local/bin"
+  mkdir -p -- "$bin_dir"
+  install -m 0755 "$script_dir/scripts/clip-run" "$bin_dir/clip-run"
+  echo "Installed $bin_dir/clip-run"
+}
+
+is_arch_like() {
+  [[ -r /etc/os-release ]] || return 1
+  local id="" id_like=""
+  # shellcheck disable=SC1091
+  source /etc/os-release
+  id="${ID:-}"
+  id_like="${ID_LIKE:-}"
+  [[ " $id $id_like " == *" arch "* ]]
+}
+
+linux_rule_files() {
+  local files=(AGENTS.shared.md AGENTS.linux.md)
+  if is_arch_like; then
+    files+=(AGENTS.linux-arch.md)
+  fi
+  printf '%s\n' "${files[@]}"
+}
+
 join_rules() {
   local first=1
   for file in "$@"; do
@@ -69,7 +94,8 @@ write_codex() {
   local path="$dir/AGENTS.md"
   mkdir -p -- "$dir"
   backup_file "$path"
-  join_rules AGENTS.shared.md AGENTS.codex.md AGENTS.linux-initial-setup.md > "$path"
+  mapfile -t base_rules < <(linux_rule_files)
+  join_rules "${base_rules[@]}" AGENTS.codex.md AGENTS.linux-initial-setup.md > "$path"
   echo "Wrote $path"
 }
 
@@ -78,7 +104,8 @@ write_claude() {
   local path="$dir/CLAUDE.md"
   mkdir -p -- "$dir"
   backup_file "$path"
-  join_rules AGENTS.shared.md CLAUDE.md AGENTS.linux-initial-setup.md > "$path"
+  mapfile -t base_rules < <(linux_rule_files)
+  join_rules "${base_rules[@]}" CLAUDE.md AGENTS.linux-initial-setup.md > "$path"
   echo "Wrote $path"
 }
 
@@ -120,3 +147,5 @@ case "$target_agent" in
   both) write_codex; write_claude ;;
   none) echo "No agent rule files written." ;;
 esac
+
+install_linux_helpers

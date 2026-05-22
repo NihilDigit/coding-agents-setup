@@ -25,7 +25,7 @@ Prefer the user's local tools and package managers:
 - One-off JS commands: use `bunx`.
 - ML or GPU-heavy environments with mixed dependencies: prefer `pixi` when the project uses it.
 - Arch/Linux system packages on this user's machines: use `paru -S` or `sudo pacman -S` when installation is explicitly needed.
-- Token-heavy command output: use `rtk` manually for compact output when exact raw logs are not required. `rtk` is this machine's local output-compaction helper for grep/read/find/git/test command summaries.
+- Token-heavy command output: use `rtk` manually for compact output when exact raw logs are not required.
 
 If a project pins another toolchain, follow the project. Examples: use `npm` when `package-lock.json` and scripts require it; use Poetry/PDM when the repo is built around it; use `pnpm` when the lockfile and scripts require it.
 
@@ -39,7 +39,7 @@ Treat the local agent session as a fast development lane, not as permission to i
 
 Read-only inspection commands and common local `bun`/`uv` development commands may be auto-allowed. Use them freely for context gathering, tests, typechecks, and local project workflows.
 
-Cross-directory writes, network access, dependency installation, broad command runners, destructive file operations, GUI launches, and privileged system commands still require explicit approval or a clearly justified escalation request.
+Cross-directory writes, network access, broad command runners, destructive file operations, GUI launches, and privileged system commands still require explicit approval or a clearly justified escalation request. Dependency installation and updates may be non-interactive when they are scoped to the requested setup; uninstall, delete, cleanup, prune, and remove operations must not be silent.
 
 Prefer narrow commands over broad interpreters. For example, use `bun test`, `bun run <script>`, `uv run <tool>`, or a project test command instead of a generic shell, Python, or curl pipeline when a narrower entry point exists.
 
@@ -47,7 +47,7 @@ When a package or small tool is clearly needed and low risk, install it using th
 
 ## File Safety
 
-Use the installed `trash` command for deleting user or project files when available; restore deleted files through the platform trash or recycle bin. The npm `trash-cli` package provides `trash` but not `trash-put`, `trash-list`, or `trash-restore`.
+Use the platform-specific trash command for deleting user or project files when available; restore deleted files through the platform trash or recycle bin. Silent install is acceptable; silent deletion is not. Do not silently delete, uninstall, clean, prune, or remove user/project files, packages, profiles, skills, or configuration.
 
 Before editing an untracked file, create a timestamped `.bak` copy first. Check tracking with:
 
