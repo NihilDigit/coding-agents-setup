@@ -1,18 +1,36 @@
 # BEGIN Coding Agents Unix aliases
-Remove-Item Alias:ls,Alias:ll,Alias:la -Force -ErrorAction SilentlyContinue
-function global:ls { eza --icons=auto @args }
-function global:ll { eza --icons=auto -la @args }
-function global:la { eza --icons=auto -a @args }
+if (Get-Command eza -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:ls,Alias:ll,Alias:la -Force -ErrorAction SilentlyContinue
+    function global:ls { eza --icons=auto @args }
+    function global:ll { eza --icons=auto -la @args }
+    function global:la { eza --icons=auto -a @args }
+}
 
 # Keep native cat/ps/diff aliases intact for scripts that expect PowerShell objects.
-Set-Alias -Name bcat -Value bat -Option AllScope -Scope Global -Force
-Set-Alias -Name grep -Value rg -Option AllScope -Scope Global -Force
-Set-Alias -Name find -Value fd -Option AllScope -Scope Global -Force
-Set-Alias -Name du -Value dust -Option AllScope -Scope Global -Force
-Set-Alias -Name df -Value duf -Option AllScope -Scope Global -Force
-Set-Alias -Name pps -Value procs -Option AllScope -Scope Global -Force
-Set-Alias -Name top -Value btm -Option AllScope -Scope Global -Force
-Set-Alias -Name bdiff -Value delta -Option AllScope -Scope Global -Force
+if (Get-Command bat -ErrorAction SilentlyContinue) {
+    Set-Alias -Name bcat -Value bat -Option AllScope -Scope Global -Force
+}
+if (Get-Command rg -ErrorAction SilentlyContinue) {
+    Set-Alias -Name grep -Value rg -Option AllScope -Scope Global -Force
+}
+if (Get-Command fd -ErrorAction SilentlyContinue) {
+    Set-Alias -Name find -Value fd -Option AllScope -Scope Global -Force
+}
+if (Get-Command dust -ErrorAction SilentlyContinue) {
+    Set-Alias -Name du -Value dust -Option AllScope -Scope Global -Force
+}
+if (Get-Command duf -ErrorAction SilentlyContinue) {
+    Set-Alias -Name df -Value duf -Option AllScope -Scope Global -Force
+}
+if (Get-Command procs -ErrorAction SilentlyContinue) {
+    Set-Alias -Name pps -Value procs -Option AllScope -Scope Global -Force
+}
+if (Get-Command btm -ErrorAction SilentlyContinue) {
+    Set-Alias -Name top -Value btm -Option AllScope -Scope Global -Force
+}
+if (Get-Command delta -ErrorAction SilentlyContinue) {
+    Set-Alias -Name bdiff -Value delta -Option AllScope -Scope Global -Force
+}
 
 Remove-Item Alias:rm -Force -ErrorAction SilentlyContinue
 function global:rm {

@@ -159,17 +159,23 @@ check_arch_sudoers() {
     return
   fi
 
-  if sudo -n -l /usr/bin/pacman >/dev/null 2>&1; then
-    ok 'sudoers allows pacman without an interactive password for at least one command pattern'
+  local sudo_list
+  if ! sudo_list="$(sudo -n -l 2>/dev/null)"; then
+    warn 'sudo -n -l failed; package-manager sudoers may require an interactive password'
+    return
+  fi
+
+  if grep -Eq 'NOPASSWD:[[:space:]]+/usr/bin/pacman([[:space:]]|$)' <<<"$sudo_list"; then
+    ok 'sudoers allows /usr/bin/pacman without an interactive password'
   else
-    warn 'sudo pacman still requires a password or is not allowed by sudoers'
+    warn 'sudoers does not show NOPASSWD for /usr/bin/pacman'
   fi
 
   if command -v paru >/dev/null 2>&1; then
-    if sudo -n -l /usr/bin/paru >/dev/null 2>&1; then
-      ok 'sudoers allows paru without an interactive password for at least one command pattern'
+    if grep -Eq 'NOPASSWD:[[:space:]]+/usr/bin/paru([[:space:]]|$)' <<<"$sudo_list"; then
+      ok 'sudoers allows /usr/bin/paru without an interactive password'
     else
-      warn 'sudo paru still requires a password or is not allowed by sudoers'
+      warn 'sudoers does not show NOPASSWD for /usr/bin/paru'
     fi
   fi
 }

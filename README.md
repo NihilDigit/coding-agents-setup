@@ -2,44 +2,45 @@
 
 Shared setup files for local coding agents.
 
-The repo keeps the rules as small Markdown fragments, then writes the agent-specific file during setup:
+The repository keeps user-level agent rules as small Markdown fragments, then composes the right file for each target agent and platform.
+
+## Rule Fragments
+
+Common fragments:
 
 ```text
 rules/AGENTS.shared.md
-rules/AGENTS.windows.md
-rules/AGENTS.linux.md
-rules/AGENTS.linux-arch.md
 rules/AGENTS.codex.md
 rules/CLAUDE.md
 ```
 
-On Windows, `setup-windows.ps1` composes those fragments into:
+Platform fragments:
 
 ```text
-~/.codex/AGENTS.md   = shared + windows + codex
-~/.claude/CLAUDE.md  = shared + windows + claude
+rules/AGENTS.windows.md
+rules/AGENTS.linux.md
+rules/AGENTS.linux-arch.md
+rules/AGENTS.linux-initial-setup.md
 ```
 
-The shared fragment contains behavior that should apply to any coding agent: workflow, toolchain preferences, skills, file safety, output discipline, and browser-use policy. Platform-specific shell behavior stays in a platform fragment. Agent-specific notes stay in adapter fragments.
+`AGENTS.shared.md` stays platform-neutral. Shell aliases, package manager guidance, and platform paths belong in platform fragments. Agent-specific directory conventions belong in adapter fragments.
+
+On Linux, `AGENTS.linux-arch.md` is included only when `/etc/os-release` reports `ID=arch` or an `ID_LIKE` value containing `arch`.
 
 ## Install
 
-Windows is the full interactive setup. It can install tools, write PowerShell profile helpers, configure skills layout, and write agent rules. When writing the PowerShell profile, it asks whether to enable recommended Unix-style aliases such as `ls -> eza`, `grep -> rg`, and safe `rm -> trash`; the default is yes.
+Review the scripts before running remote bootstrap commands. These commands download code and execute it locally.
+
+Windows interactive setup:
 
 ```powershell
 irm https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.ps1 | iex
 ```
 
-Linux is intentionally lighter. It writes agent Markdown files, installs small user-local helpers such as `clip-run`, and includes a temporary first-run task for the agent to inspect the machine and ask what to configure:
+Linux lightweight setup:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | bash
-```
-
-Set the target agent non-interactively:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | AGENT=claude bash
 ```
 
 From a cloned checkout:
@@ -48,7 +49,30 @@ From a cloned checkout:
 .\setup-windows.ps1 -Agent Both
 ```
 
-Non-interactive install:
+```bash
+./setup-linux.sh --agent both
+```
+
+Set the Linux target agent non-interactively:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | AGENT=claude bash
+```
+
+## Windows
+
+Windows is the full interactive setup. It can:
+
+- install developer tools with `winget` and `bun`
+- install `rtk.exe` from the latest `rtk-ai/rtk` GitHub release
+- install the JS `trash-cli` package with `bun` for safe `trash` behavior
+- configure `~/.agents/skills`, `~/.claude/skills`, and `~/.codex/skills`
+- write Codex and Claude rule files
+- write PowerShell profile blocks
+
+PowerShell profile writing is interactive. The base profile block adds PATH entries, zoxide, and helper functions. A second prompt asks whether to enable recommended Unix-style aliases such as `ls -> eza`, `grep -> rg`, and safe `rm -> trash`; the default is yes.
+
+`-Yes` accepts every setup prompt, including prompts whose interactive default is no. Use it only when you want the full install path:
 
 ```powershell
 .\setup-windows.ps1 -Agent Both -Yes
@@ -60,38 +84,31 @@ Rules only, without installing tools or writing PowerShell profiles:
 .\setup-windows.ps1 -Agent Codex -SkipTools -SkipProfile
 ```
 
-Remote Windows bootstrap, after reviewing `install.ps1` and the repository:
+## Linux
 
-```powershell
-irm https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.ps1 | iex
-```
+Linux setup is intentionally lighter. It writes agent rule files, installs `~/.local/bin/clip-run`, and includes a temporary first-run task in the generated Markdown for the agent to inspect the machine and ask what to configure.
 
-The Windows bootstrap downloads the repository archive and runs `setup-windows.ps1`. It is intentionally thin so the versioned setup script remains the source of truth.
+It does not install system packages or modify shell profiles.
 
-## Agent Targets
+On Arch-like systems, the generated rules recommend:
 
-`-Agent` accepts:
+- using `paru -S` or `sudo pacman -S` for package installs
+- preferring `*-bin` AUR packages when available
+- using system `trash-cli`, not the npm package
+- configuring sudoers for `/usr/bin/pacman` and `/usr/bin/paru`, not `NOPASSWD: ALL`
 
-- `Codex`: write `~/.codex/AGENTS.md`
-- `Claude`: write `~/.claude/CLAUDE.md`
-- `Both`: write both
-- `None`: install shared tooling only
-- `Prompt`: ask interactively
+After the first Linux setup pass, delete the temporary `Linux Initial Setup Task` section from the generated agent file.
 
-## Repository Policy
+## Safety
 
-Do not put machine-specific SDK inventories, device IDs, or project paths in shared rules. Keep those in a private local note or in the relevant project repository.
+Silent install and update are acceptable when scoped to the requested setup. Silent deletion is not.
 
-The Windows installer configures tools and shell ergonomics. The Linux installer writes agent Markdown files, installs user-local helpers, and leaves system package setup to the agent after it inspects the machine.
+Setup scripts should not silently delete, uninstall, clean, prune, or remove user files, packages, profiles, skills, or configuration. Existing managed files are backed up or moved aside first.
 
-Linux has a deliberately small helper for cloned checkouts:
+Remote bootstrap commands are intentionally thin wrappers:
 
-```bash
-./setup-linux.sh --agent both
-```
-
-It writes agent rule files, installs `~/.local/bin/clip-run`, and includes a temporary bootstrap note in the generated Markdown. It does not install system packages or modify shell profiles.
-The temporary Linux section is an instruction for the agent to inspect the machine, ask what to configure, and then personalize the setup locally.
+- `install.ps1` downloads the repository archive and runs `setup-windows.ps1`.
+- `install.sh` downloads the repository archive and runs `setup-linux.sh`.
 
 ## Backups
 
@@ -118,3 +135,33 @@ Windows verification reads the selection state written by `setup-windows.ps1` an
 ```
 
 Use `.\verify-windows.ps1 -Recommended` to also show warnings for recommended tools that were not selected.
+
+Repository syntax checks:
+
+```powershell
+pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
+```
+
+On Arch-like systems, install `powershell-bin` for repository development and script validation. Prefer the binary package over the source-build `powershell` AUR package.
+
+## Agent Targets
+
+Windows `-Agent` accepts:
+
+- `Codex`: write `~/.codex/AGENTS.md`
+- `Claude`: write `~/.claude/CLAUDE.md`
+- `Both`: write both
+- `None`: install shared tooling only
+- `Prompt`: ask interactively
+
+Linux `--agent` accepts:
+
+- `codex`: write `~/.codex/AGENTS.md`
+- `claude`: write `~/.claude/CLAUDE.md`
+- `both`: write both
+- `none`: write no agent files
+- `prompt`: ask interactively
+
+## Repository Policy
+
+Do not put machine-specific SDK inventories, device IDs, package inventories, or project paths in shared rules. Keep those in private local notes or in the relevant project repository.
