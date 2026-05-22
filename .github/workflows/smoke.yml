@@ -19,7 +19,7 @@ jobs:
       - name: Syntax checks
         shell: bash
         run: |
-          bash -n setup-linux.sh install.sh verify-linux.sh scripts/clip-run
+          bash -n setup-linux.sh install.sh verify-linux.sh scripts/clip-run tests/Smoke-Linux.sh
           pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
 
       - uses: oven-sh/setup-bun@v2
@@ -42,6 +42,7 @@ jobs:
           mkdir -p "$HOME"
           ./setup-linux.sh --agent both
           ./verify-linux.sh
+          bash tests/Smoke-Linux.sh
 
   windows:
     name: Windows smoke
@@ -59,3 +60,4 @@ jobs:
         run: |
           ./setup-windows.ps1 -Agent Both -NonInteractive
           ./verify-windows.ps1
+          ./tests/Smoke-Windows.ps1

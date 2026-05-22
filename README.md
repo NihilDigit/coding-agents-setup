@@ -156,13 +156,25 @@ Repository syntax checks:
 pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
 ```
 
+Behavior smoke checks after setup:
+
+```bash
+bash tests/Smoke-Linux.sh
+```
+
+```powershell
+.\tests\Smoke-Windows.ps1
+```
+
+The smoke checks exercise installed commands, not only file presence. Linux verifies `trash-put`, `clip-run`, and `rtk` behavior. Windows verifies installed commands, a fresh PowerShell profile session with `rm` shadowed to the safe trash function, and Kimi WebBridge `status` when Kimi was selected during setup.
+
 On Arch-like systems, install `powershell-bin` for repository development and script validation. Prefer the binary package over the source-build `powershell` AUR package.
 
 GitHub Actions runs smoke tests on Ubuntu and Windows when a `ci-*` tag is pushed. To publish a tested bootstrap target, push a local tag such as:
 
 ```bash
 tag="ci-$(date -u +%Y%m%d%H%M%S)"
-git tag "$tag"
+git tag --no-sign "$tag"
 git push origin "$tag"
 ```
 

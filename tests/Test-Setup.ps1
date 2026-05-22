@@ -5,6 +5,7 @@ $psFiles = @(
     (Join-Path $root 'setup-windows.ps1')
     (Join-Path $root 'install.ps1')
     (Join-Path $root 'verify-windows.ps1')
+    (Join-Path $root 'tests\Smoke-Windows.ps1')
     (Join-Path $root 'profiles\Microsoft.PowerShell_profile.block.ps1')
     (Join-Path $root 'profiles\Microsoft.PowerShell_profile.aliases.ps1')
 )
@@ -14,6 +15,7 @@ $shFiles = @(
     (Join-Path $root 'install.sh')
     (Join-Path $root 'verify-linux.sh')
     (Join-Path $root 'scripts/clip-run')
+    (Join-Path $root 'tests/Smoke-Linux.sh')
 )
 
 foreach ($path in $psFiles) {
