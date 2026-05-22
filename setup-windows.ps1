@@ -89,8 +89,14 @@ function Select-AgentTarget {
 
 function Add-SessionPath {
     param([Parameter(Mandatory = $true)][string]$Path)
-    if ((Test-Path -LiteralPath $Path) -and (($env:Path -split ';') -notcontains $Path)) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+    if (($env:Path -split ';') -notcontains $Path) {
         $env:Path += ";$Path"
+    }
+    if ($env:GITHUB_PATH) {
+        Add-Content -LiteralPath $env:GITHUB_PATH -Value $Path
     }
 }
 

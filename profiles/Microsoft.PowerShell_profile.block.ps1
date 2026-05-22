@@ -2,6 +2,7 @@
 $__agentExtraPaths = @(
     (Join-Path $HOME 'AppData\Local\Microsoft\WinGet\Links'),
     (Join-Path $HOME 'scoop\shims'),
+    (Join-Path $HOME '.local\bin'),
     (Join-Path $HOME '.bun\bin'),
     (Join-Path $HOME '.kimi-webbridge\bin'),
     'C:\Program Files\bottom\bin'
