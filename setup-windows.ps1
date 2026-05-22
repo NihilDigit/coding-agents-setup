@@ -61,6 +61,8 @@ function Write-SetupState {
     $stateDir = Join-Path $HOME '.coding-agents-setup'
     $statePath = Join-Path $stateDir 'windows-selection.json'
     New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+    $backup = Backup-Path $statePath
+    if ($backup) { Write-Host "Backed up $statePath -> $backup" }
     $SetupState.GeneratedAt = (Get-Date).ToString('o')
     $SetupState | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $statePath -Encoding UTF8
     Write-Host "Wrote $statePath"
@@ -292,10 +294,13 @@ function Install-Rtk {
 
     $binDir = Join-Path $HOME '.local\bin'
     New-Item -ItemType Directory -Force -Path $binDir | Out-Null
-    Copy-Item -LiteralPath $rtkExe.FullName -Destination (Join-Path $binDir 'rtk.exe') -Force
+    $targetRtk = Join-Path $binDir 'rtk.exe'
+    $backup = Backup-Path $targetRtk
+    if ($backup) { Write-Host "Backed up $targetRtk -> $backup" }
+    Copy-Item -LiteralPath $rtkExe.FullName -Destination $targetRtk -Force
     Add-SessionPath $binDir
 
-    & (Join-Path $binDir 'rtk.exe') gain *> $null
+    & $targetRtk gain *> $null
     if ($LASTEXITCODE -ne 0) {
         throw 'Installed rtk.exe, but rtk gain failed.'
     }
@@ -314,6 +319,8 @@ function Write-PowerShellProfiles {
     foreach ($profilePath in $profiles) {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $profilePath) | Out-Null
         $content = if (Test-Path -LiteralPath $profilePath) { Get-Content -LiteralPath $profilePath -Raw } else { '' }
+        $backup = Backup-Path $profilePath
+        if ($backup) { Write-Host "Backed up $profilePath -> $backup" }
         $content = [regex]::Replace($content, '(?s)\r?\n?# BEGIN (Codex CLI|Coding Agents) ergonomics.*?# END (Codex CLI|Coding Agents) ergonomics\r?\n?', "`n")
         $content = $content.TrimEnd()
         $newContent = if ($content) { $content + "`n`n" + $profileBlock + "`n" } else { $profileBlock + "`n" }

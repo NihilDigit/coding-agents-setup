@@ -41,9 +41,11 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 install_linux_helpers() {
   local bin_dir="$HOME/.local/bin"
+  local clip_run="$bin_dir/clip-run"
   mkdir -p -- "$bin_dir"
-  install -m 0755 "$script_dir/scripts/clip-run" "$bin_dir/clip-run"
-  echo "Installed $bin_dir/clip-run"
+  backup_file "$clip_run"
+  install -m 0755 "$script_dir/scripts/clip-run" "$clip_run"
+  echo "Installed $clip_run"
 }
 
 is_arch_like() {

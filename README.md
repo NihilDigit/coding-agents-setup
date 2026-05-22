@@ -93,6 +93,14 @@ Linux has a deliberately small helper for cloned checkouts:
 It writes agent rule files, installs `~/.local/bin/clip-run`, and includes a temporary bootstrap note in the generated Markdown. It does not install system packages or modify shell profiles.
 The temporary Linux section is an instruction for the agent to inspect the machine, ask what to configure, and then personalize the setup locally.
 
+## Backups
+
+Setup backs up persistent files before replacing them:
+
+- Linux: adjacent `*.bak-<timestamp>` backups for generated agent rules and `~/.local/bin/clip-run`.
+- Windows: backups under `~/.coding-agents-backup-<timestamp>` for generated agent rules, PowerShell profiles, setup selection state, and `~/.local/bin/rtk.exe`.
+- Windows skills layout: existing `~/.claude/skills` links or directories are moved to `.old-<timestamp>` before the new link is created.
+
 ## Verify
 
 Linux verification is incremental by design:

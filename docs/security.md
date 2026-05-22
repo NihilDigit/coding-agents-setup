@@ -18,6 +18,8 @@ curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main
 
 downloads a repository archive and runs `setup-linux.sh`. The Linux setup writes agent Markdown files and user-local helpers such as `~/.local/bin/clip-run`; it does not install system packages or edit shell profiles.
 
+Persistent files overwritten by setup are backed up first. Linux writes adjacent `*.bak-<timestamp>` files for agent rules and `clip-run`. Windows writes backups under `~/.coding-agents-backup-<timestamp>` before replacing agent rules, PowerShell profiles, setup selection state, or `rtk.exe`; existing Claude skills links/directories are moved aside with an `.old-<timestamp>` suffix.
+
 The Kimi WebBridge installer uses the vendor's current PowerShell installer:
 
 ```powershell
