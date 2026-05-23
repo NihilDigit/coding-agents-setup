@@ -89,6 +89,15 @@ function Check-Contains {
 Write-Host 'Coding Agents Windows verification'
 Write-Host "PowerShell: $($PSVersionTable.PSVersion)"
 
+Require-Command 'pwsh'
+
+$currentUserPolicy = Get-ExecutionPolicy -Scope CurrentUser
+if ($currentUserPolicy -eq 'RemoteSigned' -or $currentUserPolicy -eq 'Unrestricted' -or $currentUserPolicy -eq 'Bypass') {
+    Ok "CurrentUser execution policy permits local scripts: $currentUserPolicy"
+} else {
+    Fail "CurrentUser execution policy may block setup scripts: $currentUserPolicy"
+}
+
 $state = $null
 if (Test-Path -LiteralPath $StatePath -PathType Leaf) {
     try {

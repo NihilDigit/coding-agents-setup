@@ -2,6 +2,8 @@
 
 This Windows setup uses `winget` for system tools when available and `scoop` only as a fallback. The setup script is interactive by default, with `-Yes` for a full recommended install and `-NonInteractive` for conservative defaults.
 
+Windows setup should ensure PowerShell 7 (`pwsh`) is installed, run the remote bootstrap through `pwsh`, set the current user's PowerShell execution policy to `RemoteSigned`, and prefer PowerShell 7 as the default Windows Terminal profile when Windows Terminal settings are present.
+
 PATH updates made by the setup script are session-scoped unless a profile block is written. Open a new PowerShell session after setup to pick up profile changes.
 
 Tool installation and updates may run non-interactively when the user selected them. Uninstall, delete, cleanup, prune, and remove operations must not be silent.

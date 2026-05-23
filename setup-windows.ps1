@@ -26,6 +26,8 @@ $SetupState = [ordered]@{
     SelectedFeatures = @()
     ProfileSelected = $false
     UnixAliasesSelected = $false
+    ExecutionPolicy = $null
+    DefaultPowerShell = $null
 }
 
 function Test-Command {
@@ -223,6 +225,108 @@ function Install-WinGetPackage {
     }
 }
 
+function Enable-UserPowerShellScripts {
+    $desiredPolicy = 'RemoteSigned'
+    try {
+        $currentPolicy = Get-ExecutionPolicy -Scope CurrentUser
+        if ($currentPolicy -ne $desiredPolicy) {
+            Write-Host "Setting CurrentUser PowerShell execution policy to $desiredPolicy"
+            Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy $desiredPolicy -Force
+        } else {
+            Write-Host "PowerShell CurrentUser execution policy is already $desiredPolicy"
+        }
+        $SetupState.ExecutionPolicy = (Get-ExecutionPolicy -Scope CurrentUser).ToString()
+        Add-SelectedFeature 'powershell-execution-policy'
+    } catch {
+        $SetupState.ExecutionPolicy = 'unconfigured'
+        Write-Warning "Could not set CurrentUser execution policy to $desiredPolicy. Start PowerShell with -ExecutionPolicy Bypass for this setup, then run: Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy $desiredPolicy"
+    }
+}
+
+function Set-WindowsTerminalDefaultPowerShell {
+    param([Parameter(Mandatory = $true)][string]$PwshPath)
+
+    $settingsPaths = @(
+        (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\settings.json')
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) }
+
+    if (-not $settingsPaths) {
+        Write-Host 'Windows Terminal settings were not found; skipping default terminal profile update.'
+        return $false
+    }
+
+    foreach ($settingsPath in $settingsPaths) {
+        try {
+            $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+            $profiles = @()
+            if ($settings.profiles -and $settings.profiles.list) {
+                $profiles = @($settings.profiles.list)
+            } elseif ($settings.profiles -is [array]) {
+                $profiles = @($settings.profiles)
+            }
+
+            $pwshProfile = $profiles |
+                Where-Object {
+                    ($_.commandline -and $_.commandline -like '*pwsh*') -or
+                    ($_.source -eq 'Windows.Terminal.PowershellCore') -or
+                    ($_.name -and $_.name -like '*PowerShell*7*')
+                } |
+                Select-Object -First 1
+
+            if (-not $pwshProfile) {
+                Write-Host "No PowerShell 7 profile found in $settingsPath; Windows Terminal will usually add it after it detects $PwshPath."
+                continue
+            }
+
+            if (-not $pwshProfile.guid) {
+                Write-Host "PowerShell 7 profile in $settingsPath has no guid; skipping default profile update."
+                continue
+            }
+
+            if ($settings.defaultProfile -eq $pwshProfile.guid) {
+                Write-Host "Windows Terminal already defaults to PowerShell 7 in $settingsPath"
+                return $true
+            }
+
+            $backup = Backup-Path $settingsPath
+            if ($backup) { Write-Host "Backed up $settingsPath -> $backup" }
+            if ($settings.PSObject.Properties.Name -contains 'defaultProfile') {
+                $settings.defaultProfile = $pwshProfile.guid
+            } else {
+                $settings | Add-Member -NotePropertyName 'defaultProfile' -NotePropertyValue $pwshProfile.guid
+            }
+            $settings | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $settingsPath -Encoding UTF8
+            Write-Host "Set Windows Terminal default profile to PowerShell 7 in $settingsPath"
+            return $true
+        } catch {
+            Write-Warning "Could not update Windows Terminal default profile in $settingsPath`: $($_.Exception.Message)"
+        }
+    }
+
+    return $false
+}
+
+function Ensure-PowerShell7Default {
+    Add-SelectedCommand 'pwsh'
+    Add-SelectedFeature 'powershell-7'
+
+    if (-not (Test-Command pwsh)) {
+        Install-WinGetPackage -Id 'Microsoft.PowerShell' -Command 'pwsh' -DisplayName 'PowerShell 7'
+    } else {
+        Write-Host 'PowerShell 7 is already available.'
+    }
+
+    $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwsh) {
+        $SetupState.DefaultPowerShell = $pwsh.Source
+        Set-WindowsTerminalDefaultPowerShell -PwshPath $pwsh.Source | Out-Null
+    } else {
+        $SetupState.DefaultPowerShell = 'unavailable'
+        Write-Warning 'PowerShell 7 was selected but pwsh is still unavailable in this session.'
+    }
+}
+
 function Install-BunGlobal {
     param(
         [Parameter(Mandatory = $true)][string]$Package,
@@ -383,6 +487,12 @@ function Write-PowerShellProfiles {
 }
 
 Write-Host 'Coding Agents Windows Setup'
+Enable-UserPowerShellScripts
+
+if (-not $SkipTools) {
+    Ensure-PowerShell7Default
+}
+
 $targetAgent = Select-AgentTarget
 $SetupState.Agent = $targetAgent
 

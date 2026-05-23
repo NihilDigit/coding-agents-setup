@@ -10,6 +10,8 @@ irm https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/instal
 
 downloads and executes PowerShell code from GitHub. Review `install.ps1`, `setup-windows.ps1`, and the rule fragments before running it on a machine you care about.
 
+The Windows bootstrap installs PowerShell 7 with `winget` when `pwsh` is missing, sets `CurrentUser` execution policy to `RemoteSigned` so local setup scripts can run, and then executes the downloaded setup with `pwsh -ExecutionPolicy Bypass`.
+
 Linux bootstrap usage such as:
 
 ```bash

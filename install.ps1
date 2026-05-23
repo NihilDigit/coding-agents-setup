@@ -20,6 +20,61 @@ $ErrorActionPreference = 'Stop'
 
 Write-Warning 'This bootstrap downloads and executes setup-windows.ps1 from GitHub. Review the repository before running it on a machine you care about.'
 
+function Test-Command {
+    param([Parameter(Mandatory = $true)][string]$Name)
+    return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+function Get-PwshCommand {
+    $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwsh) { return $pwsh }
+
+    $candidateRoots = @(
+        $env:ProgramFiles,
+        ${env:ProgramFiles(x86)},
+        $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links' })
+    ) | Where-Object { $_ }
+    $candidates = foreach ($root in $candidateRoots) {
+        if ((Split-Path -Leaf $root) -eq 'Links') {
+            Join-Path $root 'pwsh.exe'
+        } else {
+            Join-Path $root 'PowerShell\7\pwsh.exe'
+        }
+    }
+    $candidates = @($candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
+
+    if ($candidates) {
+        $pwshPath = $candidates[0]
+        $pwshDir = Split-Path -Parent $pwshPath
+        if (($env:Path -split ';') -notcontains $pwshDir) {
+            $env:Path += ";$pwshDir"
+        }
+        return Get-Command $pwshPath -ErrorAction SilentlyContinue
+    }
+
+    return $null
+}
+
+try {
+    if ((Get-ExecutionPolicy -Scope CurrentUser) -ne 'RemoteSigned') {
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+    }
+} catch {
+    Write-Warning "Could not set CurrentUser execution policy to RemoteSigned: $($_.Exception.Message)"
+}
+
+if (-not (Get-PwshCommand)) {
+    if (-not (Test-Command winget)) {
+        throw 'PowerShell 7 (pwsh) is not installed, and winget is unavailable. Install PowerShell 7 from Microsoft.PowerShell or install App Installer, then rerun this bootstrap.'
+    }
+
+    Write-Host 'Installing PowerShell 7 (Microsoft.PowerShell) with winget'
+    winget install --id Microsoft.PowerShell -e --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -ne 0) {
+        throw "winget failed to install PowerShell 7 with exit code $LASTEXITCODE."
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($Ref)) {
     $runs = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/actions/workflows/smoke.yml/runs?status=success&event=push&per_page=50"
     $run = @($runs.workflow_runs | Where-Object { $_.head_branch -like 'ci-*' -and $_.head_sha } | Select-Object -First 1)
@@ -60,4 +115,9 @@ if ($NonInteractive) { $args += '-NonInteractive' }
 if ($SkipTools) { $args += '-SkipTools' }
 if ($SkipProfile) { $args += '-SkipProfile' }
 
-& powershell @args
+$pwsh = Get-PwshCommand
+if (-not $pwsh) {
+    throw 'PowerShell 7 (pwsh) is still unavailable after installation.'
+}
+
+& $pwsh.Source @args

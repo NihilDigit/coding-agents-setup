@@ -52,6 +52,12 @@ curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main
 
 Windows is the full interactive setup. It can install the toolchain, write Codex/Claude rule files, write a PowerShell profile, make `rm` send files to the Recycle Bin, set up Agent Skills directories, install `rtk`, and optionally install Kimi WebBridge.
 
+The Windows bootstrap installs PowerShell 7 (`pwsh`) by default, runs setup through it, sets the current user's execution policy to `RemoteSigned`, and tries to make PowerShell 7 the default Windows Terminal profile. If a cloned checkout is blocked before the script can start, launch it once with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup-windows.ps1 -Agent Both
+```
+
 PowerShell profile writing is interactive. The default profile adds PATH entries and helper functions. A second prompt enables Unix-style aliases, including safe `rm -> trash` shadowing; the default is yes.
 
 Kimi WebBridge is offered by default and can be declined. It downloads and executes Kimi's current installer, and browser extension/profile access may be required for browser automation.
