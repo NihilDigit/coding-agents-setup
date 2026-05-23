@@ -45,6 +45,25 @@ function Recommend-Command {
     }
 }
 
+function Test-RtkCommand {
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $versionOutput = & rtk --version 2>&1
+        if ($LASTEXITCODE -ne 0) { return $false }
+
+        $helpOutput = & rtk --help 2>&1
+        if ($LASTEXITCODE -ne 0) { return $false }
+
+        $probeText = (@($versionOutput) + @($helpOutput)) -join "`n"
+        return (($probeText -match '(?m)^rtk\s+\d') -and ($probeText -like '*token-optimized output*'))
+    } catch {
+        return $false
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 function Check-File {
     param([Parameter(Mandatory = $true)][string]$Path)
     if (Test-Path -LiteralPath $Path -PathType Leaf) {
@@ -99,11 +118,10 @@ if ($Recommended) {
 }
 
 if (Get-Command rtk -ErrorAction SilentlyContinue) {
-    & rtk gain *> $null
-    if ($LASTEXITCODE -eq 0) {
-        Ok 'rtk gain works; expected rtk-ai/rtk behavior'
+    if (Test-RtkCommand) {
+        Ok 'rtk-ai/rtk CLI detected'
     } else {
-        Fail 'rtk exists but rtk gain failed; check for wrong rtk package'
+        Fail 'rtk exists but does not look like rtk-ai/rtk'
     }
 }
 

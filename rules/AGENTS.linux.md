@@ -32,4 +32,4 @@ Install `rtk-ai/rtk` when token-heavy command output should be compacted:
 curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | bash
 ```
 
-Verify the expected RTK with `rtk gain`; this distinguishes it from unrelated packages that also use the `rtk` name.
+Verify the expected RTK with `rtk --version` plus `rtk --help`; `rtk gain` depends on local hook/tracking state and is not a reliable install probe.

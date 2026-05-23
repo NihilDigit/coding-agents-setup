@@ -25,7 +25,8 @@ bunx --version >/dev/null
 uv --version >/dev/null
 uvx --version >/dev/null
 python3 --version >/dev/null
-rtk gain >/dev/null
+rtk --version 2>/dev/null | grep -Eq '^rtk[[:space:]][0-9]'
+rtk --help 2>/dev/null | grep -Fq 'token-optimized output'
 ok 'core commands execute'
 
 trash_target="$(mktemp)"

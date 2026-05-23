@@ -40,6 +40,29 @@ function Invoke-ExternalWithTimeout {
     }
 }
 
+function Test-RtkCommand {
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $versionOutput = & rtk --version 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "rtk --version failed with exit code $LASTEXITCODE"
+        }
+
+        $helpOutput = & rtk --help 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "rtk --help failed with exit code $LASTEXITCODE"
+        }
+
+        $probeText = (@($versionOutput) + @($helpOutput)) -join "`n"
+        if (-not (($probeText -match '(?m)^rtk\s+\d') -and ($probeText -like '*token-optimized output*'))) {
+            throw 'rtk exists but does not look like rtk-ai/rtk'
+        }
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 foreach ($cmd in @('git', 'uv', 'uvx', 'bun', 'bunx', 'trash', 'rtk')) {
     Require-Command $cmd
 }
@@ -50,7 +73,7 @@ uvx --version *> $null
 bun --version *> $null
 bunx --version *> $null
 trash --help *> $null
-rtk gain *> $null
+Test-RtkCommand
 Ok 'core commands execute'
 
 $profileProbe = @'

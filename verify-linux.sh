@@ -122,10 +122,10 @@ check_trash() {
 check_rtk() {
   require_command rtk
   if command -v rtk >/dev/null 2>&1; then
-    if rtk gain >/dev/null 2>&1; then
-      ok 'rtk gain works; expected rtk-ai/rtk behavior'
+    if rtk --version 2>/dev/null | grep -Eq '^rtk[[:space:]][0-9]' && rtk --help 2>/dev/null | grep -Fq 'token-optimized output'; then
+      ok 'rtk-ai/rtk CLI detected'
     else
-      fail 'rtk exists but rtk gain failed; check for wrong rtk package'
+      fail 'rtk exists but does not look like rtk-ai/rtk'
     fi
   fi
 }

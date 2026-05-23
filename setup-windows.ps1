@@ -33,6 +33,27 @@ function Test-Command {
     return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
+function Test-RtkCommand {
+    param([Parameter(Mandatory = $true)][string]$Command)
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $versionOutput = & $Command --version 2>&1
+        if ($LASTEXITCODE -ne 0) { return $false }
+
+        $helpOutput = & $Command --help 2>&1
+        if ($LASTEXITCODE -ne 0) { return $false }
+
+        $probeText = (@($versionOutput) + @($helpOutput)) -join "`n"
+        return (($probeText -match '(?m)^rtk\s+\d') -and ($probeText -like '*token-optimized output*'))
+    } catch {
+        return $false
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 function Confirm-Step {
     param(
         [Parameter(Mandatory = $true)][string]$Prompt,
@@ -290,13 +311,11 @@ function Install-KimiWebBridge {
 
 function Install-Rtk {
     if (Test-Command rtk) {
-        try {
-            rtk gain *> $null
+        if (Test-RtkCommand 'rtk') {
             Write-Host 'RTK appears to be installed.'
             return
-        } catch {
-            Write-Warning 'A command named rtk exists, but it does not behave like rtk-ai/rtk.'
         }
+        Write-Warning 'A command named rtk exists, but it does not behave like rtk-ai/rtk.'
     }
     Write-Warning 'This downloads the current rtk-ai/rtk Windows release from GitHub and installs rtk.exe to ~/.local/bin.'
     $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/rtk-ai/rtk/releases/latest'
@@ -323,9 +342,8 @@ function Install-Rtk {
     Copy-Item -LiteralPath $rtkExe.FullName -Destination $targetRtk -Force
     Add-SessionPath $binDir
 
-    & $targetRtk gain *> $null
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Installed rtk.exe, but rtk gain failed.'
+    if (-not (Test-RtkCommand $targetRtk)) {
+        throw 'Installed rtk.exe, but it was not recognized as rtk-ai/rtk.'
     }
 }
 
