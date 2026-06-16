@@ -98,30 +98,23 @@ Set-Content -LiteralPath $profileProbePath -Value $profileProbe -Encoding UTF8
 Invoke-ExternalWithTimeout -FilePath (Get-Command pwsh).Source -ArgumentList @('-NoLogo', '-File', $profileProbePath) -TimeoutSeconds 30 -Label 'fresh PowerShell profile behavior smoke'
 Ok 'fresh PowerShell session loads rm-to-trash shadowing'
 
-if ($state -and (@($state.SelectedFeatures) -contains 'kimi-webbridge')) {
-    $kimi = Get-Command kimi-webbridge -ErrorAction SilentlyContinue
-    if (-not $kimi) {
-        $kimi = Get-Command webbridge -ErrorAction SilentlyContinue
-    }
-    if (-not $kimi) {
-        throw 'Kimi WebBridge was selected but no command is available'
+if ($state -and (@($state.SelectedFeatures) -contains 'agent-browser')) {
+    $agentBrowser = Get-Command agent-browser -ErrorAction SilentlyContinue
+    if (-not $agentBrowser) {
+        throw 'agent-browser was selected but no command is available'
     }
 
-    $statusOk = $false
-    for ($i = 0; $i -lt 3; $i++) {
-        try {
-            Invoke-ExternalWithTimeout -FilePath $kimi.Source -ArgumentList @('status') -TimeoutSeconds 15 -Label 'Kimi WebBridge status'
-            $statusOk = $true
-            break
-        } catch {
-            Write-Warning $_.Exception.Message
-        }
-        Start-Sleep -Seconds 2
+    Invoke-ExternalWithTimeout -FilePath $agentBrowser.Source -ArgumentList @('--version') -TimeoutSeconds 15 -Label 'agent-browser version'
+
+    $agentBrowserConfig = Join-Path $HOME '.agent-browser\config.json'
+    if (-not (Test-Path -LiteralPath $agentBrowserConfig -PathType Leaf)) {
+        throw 'agent-browser config is missing'
     }
-    if (-not $statusOk) {
-        throw 'Kimi WebBridge status did not succeed after installation'
+    $config = Get-Content -LiteralPath $agentBrowserConfig -Raw | ConvertFrom-Json
+    if (($config.headed -ne $true) -or ($config.profile -ne 'Default')) {
+        throw 'agent-browser config does not use headed Default profile'
     }
-    Ok 'Kimi WebBridge status succeeds'
+    Ok 'agent-browser command and config are available'
 }
 
 pwsh -NoLogo -NoProfile -File (Join-Path $root 'verify-windows.ps1')

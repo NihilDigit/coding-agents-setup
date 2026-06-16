@@ -22,12 +22,13 @@ downloads a repository archive and runs `setup-linux.sh`. By default the bootstr
 
 Persistent files overwritten by setup are backed up first. Linux writes adjacent `*.bak-<timestamp>` files for agent rules and `clip-run`. Windows writes backups under `~/.coding-agents-backup-<timestamp>` before replacing agent rules, PowerShell profiles, setup selection state, or `rtk.exe`; existing Claude skills links/directories are moved aside with an `.old-<timestamp>` suffix.
 
-The Kimi WebBridge installer uses the vendor's current PowerShell installer:
+The Windows setup can install `agent-browser` through the local JavaScript toolchain:
 
 ```powershell
-irm https://cdn.kimi.com/webbridge/install.ps1 | iex
+bun install -g agent-browser
+agent-browser install
 ```
 
-The setup script keeps this behind an explicit prompt with default yes and prints a warning before running it.
+The setup script keeps this behind an explicit prompt with default yes. It also writes `~/.agent-browser/config.json` with headed browser automation against the user's `Default` Chrome profile.
 
 Agent Skills installed with `bunx skills add <repo>` are also downloaded from GitHub repositories. Review the repository URLs before installing skills on untrusted networks.

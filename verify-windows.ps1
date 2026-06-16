@@ -121,7 +121,7 @@ if ($state) {
 }
 
 if ($Recommended) {
-    foreach ($cmd in @('eza', 'zoxide', 'bat', 'rg', 'fd', 'fzf', 'jq', 'dust', 'duf', 'procs', 'btm', 'delta', 'kimi-webbridge')) {
+    foreach ($cmd in @('eza', 'zoxide', 'bat', 'rg', 'fd', 'fzf', 'jq', 'dust', 'duf', 'procs', 'btm', 'delta', 'agent-browser')) {
         Recommend-Command $cmd
     }
 }
@@ -181,11 +181,27 @@ if ($state -and (@($state.SelectedFeatures) -contains 'default-skills')) {
     }
 }
 
-if ($state -and (@($state.SelectedFeatures) -contains 'kimi-webbridge')) {
-    if ((Get-Command kimi-webbridge -ErrorAction SilentlyContinue) -or (Get-Command webbridge -ErrorAction SilentlyContinue)) {
-        Ok 'Kimi WebBridge command is available'
+if ($state -and (@($state.SelectedFeatures) -contains 'agent-browser')) {
+    if (Get-Command agent-browser -ErrorAction SilentlyContinue) {
+        Ok 'agent-browser command is available'
     } else {
-        Fail 'Kimi WebBridge was selected but neither kimi-webbridge nor webbridge is available'
+        Fail 'agent-browser was selected but the command is unavailable'
+    }
+
+    $agentBrowserConfig = Join-Path $HOME '.agent-browser\config.json'
+    if (Test-Path -LiteralPath $agentBrowserConfig -PathType Leaf) {
+        try {
+            $config = Get-Content -LiteralPath $agentBrowserConfig -Raw | ConvertFrom-Json
+            if (($config.headed -eq $true) -and ($config.profile -eq 'Default')) {
+                Ok 'agent-browser config uses headed Default profile'
+            } else {
+                Fail 'agent-browser config does not use headed Default profile'
+            }
+        } catch {
+            Fail 'agent-browser config is not valid JSON'
+        }
+    } else {
+        Fail 'agent-browser config is missing'
     }
 }
 

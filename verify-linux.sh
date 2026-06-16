@@ -209,7 +209,7 @@ if ((! ${#commands[@]} && ! ${#features[@]})); then
   check_trash
   check_rtk
   check_clip_run
-  for cmd in fd bat eza zoxide fzf jq dust duf procs btm delta kimi-webbridge; do
+  for cmd in fd bat eza zoxide fzf jq dust duf procs btm delta agent-browser; do
     recommend_command "$cmd"
   done
   check_rules

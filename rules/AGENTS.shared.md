@@ -31,7 +31,7 @@ If a project pins another toolchain, follow the project. Examples: use `npm` whe
 
 ## Agent Skills
 
-Manage Agent Skills with the CLI as `bunx skills ...`. Keep user-installed skills in `~/.agents/skills`; by default keep `writing-style`, `impeccable`, and `kimi-webbridge` there.
+Manage Agent Skills with the CLI as `bunx skills ...`. Keep user-installed skills in `~/.agents/skills`; by default keep `writing-style`, `impeccable`, and `agent-browser` there.
 
 ## Permission Model
 
@@ -79,14 +79,17 @@ Do not use `rtk` when exact raw output is the artifact being inspected, copied, 
 
 ## Browser Use
 
-Kimi WebBridge can give the agent direct access to the user's real browser. It can read and interact with web pages from the user's perspective, including logged-in sessions, browser state, page UI, form fields, screenshots, and publish flows.
+For current web facts, use browser/search tooling and cite sources.
 
-Use Kimi WebBridge when the task depends on the user's browser context: logged-in pages, account-specific state, dynamic UI, form workflows, drafts for user review, screenshots, or any page state that ordinary search results cannot represent reliably. Use ordinary web/search tooling for public facts that do not need the user's browser state.
+For local browser automation, prefer `agent-browser` with the user's real Chrome profile in headed mode. The default user-level agent-browser config should keep:
 
-Keep browser actions read-only by default. Filling a draft is acceptable when the user asks for it, but stop before submitting forms, posting content, changing settings, sending messages, deleting data, purchasing, or touching account-sensitive state unless the user explicitly confirms the final action.
+```json
+{
+  "headed": true,
+  "profile": "Default"
+}
+```
 
-Official references:
+Invoke it with `agent-browser ...`; use `bunx agent-browser ...` as a fallback if the global binary is unavailable. This should reuse the user's logged-in Chrome state and show the browser window.
 
-- https://www.kimi.com/features/webbridge
-- https://www.kimi.com/help/kimi-webbridge/kimi-webbridge-introduction
-- https://www.kimi.com/help/kimi-webbridge/kimi-webbridge-how-it-works
+Keep browser actions read-only by default. Ask before submitting forms, changing settings, sending messages, deleting data, purchasing, or touching account-sensitive state.

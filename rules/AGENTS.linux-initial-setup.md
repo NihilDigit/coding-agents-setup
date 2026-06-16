@@ -10,7 +10,7 @@ Start by inspecting the machine without changing it:
 uname -a
 printf '%s\n' "$SHELL"
 printf '%s\n' "$PATH"
-command -v git rg fd fdfind bun bunx uv uvx python3 node npm pnpm trash trash-put gio kioclient5 kimi-webbridge webbridge
+command -v git rg fd fdfind bun bunx uv uvx python3 node npm pnpm trash trash-put gio kioclient5 agent-browser
 ```
 
 Then ask before doing any of these:
@@ -19,7 +19,7 @@ Then ask before doing any of these:
 - Install language tooling: `bun`/`bunx`, `uv`/`uvx`, project-specific Node/Python tooling, or any pinned project toolchain.
 - Configure Agent Skills: keep user-installed skills in `~/.agents/skills`; add shell or symlink integration only after confirming what the target agent expects on that machine.
 - Configure trash behavior: prefer a platform trash CLI such as `trash`, `trash-put`, `gio trash`, or the desktop environment's trash tool; do not alias `rm` until the user explicitly accepts the behavior.
-- Configure Kimi WebBridge: explain that installing it may download and execute vendor code and may need a browser extension or browser profile access.
+- Configure `agent-browser`: install it with the local JavaScript toolchain, run `agent-browser install` after install, and keep `~/.agent-browser/config.json` set to `{"headed": true, "profile": "Default"}` unless the user asks for different browser behavior.
 - Write shell startup changes: inspect the active shell first and ask before editing `.bashrc`, `.zshrc`, fish config, or profile files.
 - Add local machine notes: keep SDK paths, attached device IDs, package inventories, and desktop-specific behavior in a private local note or machine-local rule file, not in shared repository rules.
 

@@ -33,4 +33,4 @@ Do not enable Starship by default on this Windows profile. Its PowerShell initia
 
 Install RTK from `rtk-ai/rtk` when token-heavy command output should be compacted. Verify the expected binary with `rtk --version` plus `rtk --help`; `rtk gain` depends on local hook/tracking state and is not a reliable install probe.
 
-Kimi WebBridge is offered by default during Windows setup because it is useful for real-browser automation. The prompt must clearly state that it downloads and executes Kimi's installer and may need browser extension or profile access; the user can opt out interactively.
+`agent-browser` is offered by default during Windows setup because it is useful for real-browser automation. The prompt must clearly state that it installs the CLI with `bun`, downloads browser binaries with `agent-browser install`, and writes user-level defaults to `~/.agent-browser/config.json`; the user can opt out interactively.

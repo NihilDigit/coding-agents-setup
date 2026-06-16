@@ -398,19 +398,50 @@ function Install-DefaultSkills {
     bunx skills add https://github.com/pbakaus/impeccable -g -s impeccable -y
 }
 
-function Install-KimiWebBridge {
-    if (-not (Test-Command irm)) {
-        Write-Warning 'Invoke-RestMethod alias irm is not available; skipping Kimi WebBridge.'
-        return
-    }
-    if ((Test-Command kimi-webbridge) -or (Test-Command webbridge)) {
-        Write-Host 'Kimi WebBridge appears to be installed.'
-        return
+function Set-AgentBrowserConfig {
+    $configDir = Join-Path $HOME '.agent-browser'
+    $configPath = Join-Path $configDir 'config.json'
+    New-Item -ItemType Directory -Force -Path $configDir | Out-Null
+    $backup = Backup-Path $configPath
+    if ($backup) { Write-Host "Backed up $configPath -> $backup" }
+
+    $config = [ordered]@{}
+    if (Test-Path -LiteralPath $configPath -PathType Leaf) {
+        try {
+            $existing = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+            foreach ($property in $existing.PSObject.Properties) {
+                $config[$property.Name] = $property.Value
+            }
+        } catch {
+            Write-Warning "Could not parse existing agent-browser config; replacing it after backup: $($_.Exception.Message)"
+        }
     }
 
-    Write-Warning 'This downloads and executes the current PowerShell installer returned by https://cdn.kimi.com/webbridge/install.ps1.'
-    irm https://cdn.kimi.com/webbridge/install.ps1 | iex
-    Add-SessionPath (Join-Path $HOME '.kimi-webbridge\bin')
+    $config['headed'] = $true
+    $config['profile'] = 'Default'
+    $config | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    Write-Host "Wrote $configPath"
+}
+
+function Install-AgentBrowser {
+    if (-not (Test-Command agent-browser)) {
+        if (-not (Test-Command bun)) {
+            Write-Warning 'bun is not available; skipping agent-browser.'
+            return
+        }
+        Write-Host 'Installing agent-browser with bun'
+        bun install -g agent-browser
+        Add-SessionPath (Join-Path $HOME '.bun\bin')
+    } else {
+        Write-Host 'agent-browser is already available.'
+    }
+
+    if (Test-Command agent-browser) {
+        agent-browser install
+        Set-AgentBrowserConfig
+    } else {
+        Write-Warning 'agent-browser was selected but is still unavailable in this session.'
+    }
 }
 
 function Install-Rtk {
@@ -573,9 +604,10 @@ if (-not $SkipTools) {
         Install-DefaultSkills
     }
 
-    if (Confirm-Step 'Install Kimi WebBridge? Default yes; downloads and executes the current installer from kimi.com, and browser extension/profile access may be required for full automation.' $true) {
-        Add-SelectedFeature 'kimi-webbridge'
-        Install-KimiWebBridge
+    if (Confirm-Step 'Install agent-browser? Default yes; installs the CLI with bun, downloads browser binaries, and writes headed Default-profile config.' $true) {
+        Add-SelectedCommand 'agent-browser'
+        Add-SelectedFeature 'agent-browser'
+        Install-AgentBrowser
     }
 }
 
