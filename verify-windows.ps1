@@ -147,6 +147,7 @@ if ((-not $state) -or ($state.Agent -eq 'Codex') -or ($state.Agent -eq 'Both')) 
     $codexRules = Join-Path $HOME '.codex\AGENTS.md'
     Check-File $codexRules
     Check-Contains $codexRules '# Windows Environment' 'Codex rules include Windows fragment'
+    Check-Contains $codexRules 'require_escalated' 'Codex rules include GitHub CLI sandbox escalation guidance'
 }
 
 if ((-not $state) -or ($state.Agent -eq 'Claude') -or ($state.Agent -eq 'Both')) {
