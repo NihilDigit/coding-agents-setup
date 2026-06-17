@@ -14,6 +14,8 @@ Keep this lightweight. The point is not ceremony; the point is to avoid silently
 
 For reviews, lead with findings ordered by severity, including file and line references. If no issues are found, say so and mention remaining test gaps or residual risk.
 
+For repositories owned by this user, default to working directly on the main branch unless the user explicitly asks for a PR-style branch and pull request workflow.
+
 ## Local Toolchain
 
 Prefer the user's local tools and package managers:
