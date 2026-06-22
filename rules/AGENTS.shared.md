@@ -14,7 +14,7 @@ Keep this lightweight. The point is not ceremony; the point is to avoid silently
 
 For reviews, lead with findings ordered by severity, including file and line references. If no issues are found, say so and mention remaining test gaps or residual risk.
 
-For repositories owned by this user, default to working directly on the main branch unless the user explicitly asks for a PR-style branch and pull request workflow.
+For repositories owned by this user, default to working directly on the main branch unless the user explicitly asks for a PR-style branch and pull request workflow. When a branch is needed, use short type-prefixed names such as `feat/<topic>`, `fix/<topic>`, `docs/<topic>`, or `chore/<topic>`; do not default to agent-name prefixes. When opening a pull request, default the title to Conventional Commits form, for example `fix(scope): title` or `feat(scope): title`.
 
 ## Local Toolchain
 
