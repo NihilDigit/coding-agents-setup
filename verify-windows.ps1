@@ -143,17 +143,27 @@ if (Get-Command trash -ErrorAction SilentlyContinue) {
     }
 }
 
-if ((-not $state) -or ($state.Agent -eq 'Codex') -or ($state.Agent -eq 'Both')) {
+if ((-not $state) -or ($state.Agent -eq 'Codex') -or ($state.Agent -eq 'Both') -or ($state.Agent -eq 'All')) {
     $codexRules = Join-Path $HOME '.codex\AGENTS.md'
     Check-File $codexRules
     Check-Contains $codexRules '# Windows Environment' 'Codex rules include Windows fragment'
     Check-Contains $codexRules 'require_escalated' 'Codex rules include GitHub CLI sandbox escalation guidance'
 }
 
-if ((-not $state) -or ($state.Agent -eq 'Claude') -or ($state.Agent -eq 'Both')) {
+if ((-not $state) -or ($state.Agent -eq 'Claude') -or ($state.Agent -eq 'Both') -or ($state.Agent -eq 'All')) {
     $claudeRules = Join-Path $HOME '.claude\CLAUDE.md'
     Check-File $claudeRules
     Check-Contains $claudeRules '# Windows Environment' 'Claude rules include Windows fragment'
+}
+
+if ((-not $state) -or ($state.Agent -eq 'Pi') -or ($state.Agent -eq 'All')) {
+    $piRules = Join-Path $HOME '.pi\agent\AGENTS.md'
+    Check-File $piRules
+    Check-Contains $piRules '# Windows Environment' 'Pi rules include Windows fragment'
+    Check-Contains $piRules 'Core Contract' 'Pi rules include Core Contract'
+
+    $piFooter = Join-Path $HOME '.pi\agent\extensions\pi-footer.ts'
+    Check-File $piFooter
 }
 
 if ($state -and (@($state.SelectedFeatures) -contains 'skills-layout')) {

@@ -41,7 +41,7 @@ jobs:
           export HOME="$RUNNER_TEMP/home"
           export PATH="$HOME/.local/bin:$PATH"
           mkdir -p "$HOME"
-          ./setup-linux.sh --agent both
+          ./setup-linux.sh --agent all
           ./verify-linux.sh
 
       - name: Run Linux behavior smoke
@@ -67,7 +67,7 @@ jobs:
         shell: pwsh
         timeout-minutes: 8
         run: |
-          ./setup-windows.ps1 -Agent Both -NonInteractive
+          ./setup-windows.ps1 -Agent All -NonInteractive
 
       - name: Verify Windows configured behavior
         shell: pwsh
