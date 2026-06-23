@@ -2,15 +2,22 @@
 
 This file defines default behavior for coding agents working with this user. It applies across projects unless a repository-local `AGENTS.md`, `CLAUDE.md`, or equivalent project instruction gives narrower rules. Repository-local instructions always win.
 
-## Workflow
+## Issue-Driven Work Contract
 
-For broad implementation work, use this simple shape:
+When working from an Issue, problem analysis, PR brief, or any well-scoped task definition, the first output is alignment on the problem and approach, not code.
 
-1. Align with the user on the fuzzy idea until the target, constraints, and non-goals are concrete enough to act on.
-2. Help the user build a practical model of how the agent discovers the problem, analyzes it, chooses a fix, and verifies the result.
-3. Start implementation only after that shared model is clear enough for the user to understand the direction.
+Consequences:
 
-Keep this lightweight. The point is not ceremony; the point is to avoid silently turning vague intent into hidden architecture decisions.
+* Read the Issue or task definition first. Understand the problem boundary before broad code exploration.
+* Discuss the task with the user before making product changes: what problem is being solved, what scope is implied, what will not be touched, risks, validation path, and open questions.
+* Produce the appropriate brief before acting:
+
+  * For exploration work, produce or refine the problem analysis.
+  * For implementation work, produce an implementation brief: what will change, how, what will not be touched, risks, and validation plan.
+* Present the brief to the user. Do not make product code changes or open a PR before the user approves the approach.
+* After approval, proceed against the agreed scope. If new information changes the approach, pause and re-align.
+* Exploration commands and temporary probes are allowed before approval when they validate assumptions: grep, typechecks, tests, logs, throwaway scripts, or local experiments.
+* The final output must match the agreed brief. Scope changes during work trigger a new alignment cycle.
 
 For reviews, lead with findings ordered by severity, including file and line references. If no issues are found, say so and mention remaining test gaps or residual risk.
 

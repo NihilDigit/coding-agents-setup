@@ -3,11 +3,11 @@
 #
 # Usage:
 #   .\setup-windows.ps1
-#   .\setup-windows.ps1 -Agent Both -Yes
+#   .\setup-windows.ps1 -Agent All -Yes
 #   .\setup-windows.ps1 -Agent Codex -NonInteractive
 
 param(
-    [ValidateSet('Prompt', 'Codex', 'Claude', 'Pi', 'Both', 'All', 'None')]
+    [ValidateSet('Prompt', 'Codex', 'Claude', 'Pi', 'All', 'None')]
     [string]$Agent = 'Prompt',
     [switch]$Yes,
     [switch]$NonInteractive,
@@ -99,18 +99,18 @@ function Select-AgentTarget {
     Write-Host 'Which coding agent should be configured?'
     Write-Host '  1. Codex'
     Write-Host '  2. Claude Code'
+    Write-Host '  1. Codex'
+    Write-Host '  2. Claude Code'
     Write-Host '  3. Pi'
-    Write-Host '  4. Both (Codex + Claude)'
-    Write-Host '  5. All (Codex + Claude + Pi)'
-    Write-Host '  6. Shared tooling only'
-    $answer = Read-Host 'Select [1-6] (default: 3)'
+    Write-Host '  4. All (Codex + Claude + Pi)'
+    Write-Host '  5. Shared tooling only'
+    $answer = Read-Host 'Select [1-5] (default: 3)'
     switch ($answer.Trim()) {
         '1' { return 'Codex' }
         '2' { return 'Claude' }
         '3' { return 'Pi' }
-        '4' { return 'Both' }
-        '5' { return 'All' }
-        '6' { return 'None' }
+        '4' { return 'All' }
+        '5' { return 'None' }
         default { return 'Pi' }
     }
 }
@@ -169,7 +169,7 @@ function Write-AgentRules {
         $sharedFiles += 'AGENTS.windows.md'
     }
 
-    if ($Target -eq 'Codex' -or $Target -eq 'Both') {
+    if ($Target -eq 'Codex' -or $Target -eq 'All') {
         $codexDir = Join-Path $HOME '.codex'
         $codexPath = Join-Path $codexDir 'AGENTS.md'
         New-Item -ItemType Directory -Force -Path $codexDir | Out-Null
@@ -180,7 +180,7 @@ function Write-AgentRules {
         Write-Host "Wrote $codexPath"
     }
 
-    if ($Target -eq 'Claude' -or $Target -eq 'Both') {
+    if ($Target -eq 'Claude' -or $Target -eq 'All') {
         $claudeDir = Join-Path $HOME '.claude'
         $claudePath = Join-Path $claudeDir 'CLAUDE.md'
         New-Item -ItemType Directory -Force -Path $claudeDir | Out-Null
@@ -585,7 +585,7 @@ if (-not $SkipTools) {
     Add-SessionPath (Join-Path $HOME 'scoop\shims')
     Add-SessionPath 'C:\Program Files\bottom\bin'
 
-    if (Confirm-Step 'Install Codex CLI with bun if missing?' ($targetAgent -eq 'Codex' -or $targetAgent -eq 'Both' -or $targetAgent -eq 'All')) {
+    if (Confirm-Step 'Install Codex CLI with bun if missing?' ($targetAgent -eq 'Codex' -or $targetAgent -eq 'All')) {
         Add-SelectedCommand 'codex'
         Install-BunGlobal -Package '@openai/codex' -Command 'codex' -DisplayName 'Codex CLI'
     }
@@ -621,7 +621,7 @@ if (-not $SkipTools) {
         }
     }
 
-    if (Confirm-Step 'Normalize Agent Skills layout (.agents as user skill store, .claude skills link, .codex skills directory)?' ($targetAgent -eq 'Claude' -or $targetAgent -eq 'Both' -or $targetAgent -eq 'All')) {
+    if (Confirm-Step 'Normalize Agent Skills layout (.agents as user skill store, .claude skills link, .codex skills directory)?' ($targetAgent -eq 'Claude' -or $targetAgent -eq 'All')) {
         Add-SelectedFeature 'skills-layout'
         Configure-SkillsLayout
     }

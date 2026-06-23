@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  ./setup-linux.sh [--agent prompt|codex|claude|pi|both|all|none]
+  ./setup-linux.sh [--agent prompt|codex|claude|pi|all|none]
 
 This script writes agent rule files and installs user-local Linux helpers. It does not install system packages or modify shell profiles.
 USAGE
@@ -30,9 +30,9 @@ while (($#)); do
 done
 
 case "$agent" in
-  prompt|codex|claude|both|none) ;;
+  prompt|codex|claude|pi|all|none) ;;
   *)
-    echo "--agent must be one of: prompt, codex, claude, both, none" >&2
+    echo "--agent must be one of: prompt, codex, claude, pi, all, none" >&2
     exit 2
     ;;
 esac
@@ -145,18 +145,16 @@ select_agent() {
   printf '%s\n' '  1. Codex'
   printf '%s\n' '  2. Claude Code'
   printf '%s\n' '  3. Pi'
-  printf '%s\n' '  4. Both (Codex + Claude)'
-  printf '%s\n' '  5. All (Codex + Claude + Pi)'
-  printf '%s\n' '  6. Write no agent files'
-  printf '%s' 'Select [1-6] (default: 3): '
+  printf '%s\n' '  4. All (Codex + Claude + Pi)'
+  printf '%s\n' '  5. Write no agent files'
+  printf '%s' 'Select [1-5] (default: 3): '
   read -r answer
   case "$answer" in
     1) printf '%s\n' 'codex' ;;
     2) printf '%s\n' 'claude' ;;
     3) printf '%s\n' 'pi' ;;
-    4) printf '%s\n' 'both' ;;
-    5) printf '%s\n' 'all' ;;
-    6) printf '%s\n' 'none' ;;
+    4) printf '%s\n' 'all' ;;
+    5) printf '%s\n' 'none' ;;
     *) printf '%s\n' 'pi' ;;
   esac
 }
@@ -172,7 +170,6 @@ case "$target_agent" in
   codex) write_codex ;;
   claude) write_claude ;;
   pi) write_pi ;;
-  both) write_codex; write_claude ;;
   all) write_codex; write_claude; write_pi ;;
   none) echo "No agent rule files written." ;;
 esac
