@@ -7,7 +7,7 @@
 #   .\setup-windows.ps1 -Agent Codex -NonInteractive
 
 param(
-    [ValidateSet('Prompt', 'Codex', 'Claude', 'Both', 'None')]
+    [ValidateSet('Prompt', 'Codex', 'Claude', 'Pi', 'Both', 'All', 'None')]
     [string]$Agent = 'Prompt',
     [switch]$Yes,
     [switch]$NonInteractive,
@@ -94,19 +94,24 @@ function Write-SetupState {
 
 function Select-AgentTarget {
     if ($Agent -ne 'Prompt') { return $Agent }
-    if ($NonInteractive) { return 'Both' }
+    if ($NonInteractive) { return 'None' }
 
     Write-Host 'Which coding agent should be configured?'
     Write-Host '  1. Codex'
     Write-Host '  2. Claude Code'
-    Write-Host '  3. Both'
-    Write-Host '  4. Shared tooling only'
-    $answer = Read-Host 'Select [1-4] (default: 3)'
+    Write-Host '  3. Pi'
+    Write-Host '  4. Both (Codex + Claude)'
+    Write-Host '  5. All (Codex + Claude + Pi)'
+    Write-Host '  6. Shared tooling only'
+    $answer = Read-Host 'Select [1-6] (default: 3)'
     switch ($answer.Trim()) {
         '1' { return 'Codex' }
         '2' { return 'Claude' }
-        '4' { return 'None' }
-        default { return 'Both' }
+        '3' { return 'Pi' }
+        '4' { return 'Both' }
+        '5' { return 'All' }
+        '6' { return 'None' }
+        default { return 'Pi' }
     }
 }
 
@@ -184,6 +189,28 @@ function Write-AgentRules {
         $text = Get-RuleText ($sharedFiles + 'CLAUDE.md')
         Set-TextFileLf -Path $claudePath -Text $text
         Write-Host "Wrote $claudePath"
+    }
+
+    if ($Target -eq 'Pi' -or $Target -eq 'All') {
+        $piDir = Join-Path $HOME '.pi\agent'
+        $piPath = Join-Path $piDir 'AGENTS.md'
+        New-Item -ItemType Directory -Force -Path $piDir | Out-Null
+        $backup = Backup-Path $piPath
+        if ($backup) { Write-Host "Backed up $piPath -> $backup" }
+        $text = Get-RuleText ($sharedFiles + 'AGENTS.pi.md')
+        Set-TextFileLf -Path $piPath -Text $text
+        Write-Host "Wrote $piPath"
+
+        $extSource = Join-Path $ScriptRoot 'configs\pi\extensions\pi-footer.ts'
+        if (Test-Path -LiteralPath $extSource) {
+            $extDir = Join-Path $piDir 'extensions'
+            New-Item -ItemType Directory -Force -Path $extDir | Out-Null
+            $extTarget = Join-Path $extDir 'pi-footer.ts'
+            $backup = Backup-Path $extTarget
+            if ($backup) { Write-Host "Backed up $extTarget -> $backup" }
+            Copy-Item -LiteralPath $extSource -Destination $extTarget -Force
+            Write-Host "Wrote $extTarget"
+        }
     }
 }
 
@@ -558,7 +585,7 @@ if (-not $SkipTools) {
     Add-SessionPath (Join-Path $HOME 'scoop\shims')
     Add-SessionPath 'C:\Program Files\bottom\bin'
 
-    if (Confirm-Step 'Install Codex CLI with bun if missing?' ($targetAgent -eq 'Codex' -or $targetAgent -eq 'Both')) {
+    if (Confirm-Step 'Install Codex CLI with bun if missing?' ($targetAgent -eq 'Codex' -or $targetAgent -eq 'Both' -or $targetAgent -eq 'All')) {
         Add-SelectedCommand 'codex'
         Install-BunGlobal -Package '@openai/codex' -Command 'codex' -DisplayName 'Codex CLI'
     }
@@ -594,7 +621,7 @@ if (-not $SkipTools) {
         }
     }
 
-    if (Confirm-Step 'Normalize Agent Skills layout (.agents as user skill store, .claude skills link, .codex skills directory)?' ($targetAgent -eq 'Claude' -or $targetAgent -eq 'Both')) {
+    if (Confirm-Step 'Normalize Agent Skills layout (.agents as user skill store, .claude skills link, .codex skills directory)?' ($targetAgent -eq 'Claude' -or $targetAgent -eq 'Both' -or $targetAgent -eq 'All')) {
         Add-SelectedFeature 'skills-layout'
         Configure-SkillsLayout
     }
