@@ -1,14 +1,67 @@
 # Coding Agents Setup
 
-A modern local toolchain setup for coding agents. It installs or writes user-level configuration for Codex and Claude, with Windows and Linux behavior kept separate.
+A modern local toolchain setup for coding agents. It installs or writes user-level configuration for Codex, Claude, and Pi, with Windows and Linux behavior kept separate.
 
 ## TL;DR
 
 This repo turns local coding-agent conventions into installable rule files and setup scripts: available tools, package-manager preferences, file deletion behavior, operations that require user confirmation, and platform differences.
 
-It has a clear preference for newer tools: `uv` for Python, `bun` for JavaScript/TypeScript, and command-line replacements such as `rg`, `fd`, and `eza`.
+Uses `uv` for Python, `bun` for JS/TS, and CLI replacements such as `rg`, `fd`, and `eza`.
 
-Managed config files are backed up before replacement. CI runs installation and behavior smoke checks on Ubuntu and Windows, which gives a basic reliability check but cannot cover every local environment.
+Managed config files are backed up before replacement. CI runs installation and behavior smoke checks on Ubuntu and Windows.
+
+## Rule Fragments
+
+Rules are composed from Markdown fragments instead of maintained as separate full files.
+
+Codex:
+
+```text
+rules/AGENTS.shared.md
+rules/AGENTS.windows.md
+rules/AGENTS.codex.md
+```
+
+Claude Code:
+
+```text
+rules/AGENTS.shared.md
+rules/AGENTS.windows.md
+rules/CLAUDE.md
+```
+
+Pi:
+
+```text
+rules/AGENTS.shared.md
+rules/AGENTS.windows.md
+rules/AGENTS.pi.md
+```
+
+`AGENTS.shared.md` stays platform-neutral. Platform details (shell aliases, package managers, paths) go into platform fragments. Agent-specific conventions go into adapter fragments.
+
+Linux setup uses:
+
+```text
+rules/AGENTS.shared.md
+rules/AGENTS.linux.md
+rules/AGENTS.linux-arch.md when `/etc/os-release` is Arch-like
+rules/AGENTS.codex.md or rules/CLAUDE.md or rules/AGENTS.pi.md
+rules/AGENTS.linux-initial-setup.md
+```
+
+`AGENTS.linux-arch.md` is included only when `/etc/os-release` reports `ID=arch` or `ID_LIKE` contains `arch`. The initial-setup fragment is temporary—it tells the agent to inspect the machine and ask the user what to configure. Delete it after the first Linux setup pass.
+
+## Agent Targets
+
+| Agent | Windows `-Agent` | Linux `--agent` |
+|-------|------------------|-----------------|
+| Codex | `Codex` | `codex` |
+| Claude Code | `Claude` | `claude` |
+| Pi | `Pi` | `pi` |
+| Codex + Claude | `Both` | `both` |
+| Codex + Claude + Pi | `All` | `all` |
+| None (tooling only) | `None` | `none` |
 
 ## Install
 
@@ -31,11 +84,21 @@ curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main
 From a cloned checkout:
 
 ```powershell
-.\setup-windows.ps1 -Agent Both
+.\setup-windows.ps1 -Agent All
 ```
 
 ```bash
-./setup-linux.sh --agent both
+./setup-linux.sh --agent all
+```
+
+Single agent:
+
+```powershell
+.\setup-windows.ps1 -Agent Pi
+```
+
+```bash
+./setup-linux.sh --agent pi
 ```
 
 Test a branch instead of the latest tested tag:
@@ -50,12 +113,12 @@ curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main
 
 ## Windows
 
-Windows is the full interactive setup. It can install the toolchain, write Codex/Claude rule files, write a PowerShell profile, make `rm` send files to the Recycle Bin, set up Agent Skills directories, install `rtk`, and optionally install `agent-browser`.
+Windows is the full interactive setup. It can install the toolchain, write Codex/Claude/Pi rule files, write a PowerShell profile, make `rm` send files to the Recycle Bin, set up Agent Skills directories, install `rtk`, and optionally install `agent-browser`.
 
 The Windows bootstrap installs PowerShell 7 (`pwsh`) by default, runs setup through it, sets the current user's execution policy to `RemoteSigned`, and tries to make PowerShell 7 the default Windows Terminal profile. If a cloned checkout is blocked before the script can start, launch it once with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup-windows.ps1 -Agent Both
+powershell -ExecutionPolicy Bypass -File .\setup-windows.ps1 -Agent All
 ```
 
 PowerShell profile writing is interactive. The default profile adds PATH entries and helper functions. A second prompt enables Unix-style aliases, including safe `rm -> trash` shadowing; the default is yes.
@@ -65,7 +128,7 @@ PowerShell profile writing is interactive. The default profile adds PATH entries
 `-Yes` accepts every setup prompt, including prompts whose interactive default is no:
 
 ```powershell
-.\setup-windows.ps1 -Agent Both -Yes
+.\setup-windows.ps1 -Agent Codex -Yes
 ```
 
 Rules only:
@@ -120,7 +183,9 @@ Repository checks:
 pwsh -NoLogo -NoProfile -File tests/Test-Setup.ps1
 ```
 
-GitHub Actions runs smoke tests on Ubuntu and Windows when a `ci-*` tag is pushed:
+## CI
+
+GitHub Actions runs smoke tests on Ubuntu and Windows when a `ci-*` tag is pushed. To trigger a release:
 
 ```bash
 tag="ci-$(date -u +%Y%m%d%H%M%S)"
@@ -128,29 +193,4 @@ git tag --no-sign "$tag"
 git push origin "$tag"
 ```
 
-## Rule Fragments
-
-Shared:
-
-```text
-rules/AGENTS.shared.md
-rules/AGENTS.codex.md
-rules/CLAUDE.md
-```
-
-Platform:
-
-```text
-rules/AGENTS.windows.md
-rules/AGENTS.linux.md
-rules/AGENTS.linux-arch.md
-rules/AGENTS.linux-initial-setup.md
-```
-
-`AGENTS.linux-arch.md` is included only when `/etc/os-release` reports `ID=arch` or `ID_LIKE` contains `arch`.
-
-## Agent Targets
-
-Windows `-Agent`: `Codex`, `Claude`, `Both`, `None`, `Prompt`.
-
-Linux `--agent`: `codex`, `claude`, `both`, `none`, `prompt`.
+By default, remote install (```curl ... | bash``` / ```irm ... | iex```) uses the commit from the latest successful `ci-*` smoke run.
