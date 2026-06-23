@@ -156,7 +156,12 @@ function Get-RuleText {
     $parts = foreach ($name in $Names) {
         $path = Join-Path $ScriptRoot (Join-Path 'rules' $name)
         if (-not (Test-Path -LiteralPath $path)) { throw "Missing rule file: $path" }
-        (Get-Content -LiteralPath $path -Raw).Trim()
+        $text = (Get-Content -LiteralPath $path -Raw).Trim()
+        # Strip linux-only blocks, keep windows-only blocks
+        $text = [regex]::Replace($text, '(?s)<!-- :linux-only -->.*?<!-- :end -->\n?', '')
+        $text = [regex]::Replace($text, '(?s)<!-- :windows-only -->\n?', '')
+        $text = [regex]::Replace($text, '\n?<!-- :end -->', '')
+        $text
     }
     return ($parts -join "`n`n")
 }

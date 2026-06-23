@@ -48,4 +48,30 @@ fi
 bash "$clip_script" | grep -Fx 'clip-run smoke' >/dev/null
 ok 'clip-run writes an executable handoff script'
 
+# Test platform-conditional rule filtering (same sed logic as join_rules)
+filter_test_file="$(mktemp)"
+cat > "$filter_test_file" <<'EOF'
+# Common header
+
+<!-- :windows-only -->
+## Windows specific
+Windows content
+<!-- :end -->
+
+<!-- :linux-only -->
+## Linux specific
+Linux content
+<!-- :end -->
+
+## Shared footer
+EOF
+
+filtered="$(sed -e '/<!-- :windows-only -->/,/<!-- :end -->/d' -e '/<!-- :linux-only -->/d' -e '/<!-- :end -->/d' "$filter_test_file")"
+rm -f "$filter_test_file"
+
+echo "$filtered" | grep -Fq 'Linux specific' || { echo 'Linux content was stripped on Linux' >&2; exit 1; }
+echo "$filtered" | grep -Fq 'Windows specific' && { echo 'Windows content was not stripped on Linux' >&2; exit 1; }
+echo "$filtered" | grep -Fq '<!-- :' && { echo 'Platform markers leaked through filtering' >&2; exit 1; }
+ok 'platform-conditional rule filtering strips windows-only blocks on Linux'
+
 printf 'Linux behavior smoke passed\n'

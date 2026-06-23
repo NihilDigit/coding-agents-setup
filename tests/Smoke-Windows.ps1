@@ -117,6 +117,36 @@ if ($state -and (@($state.SelectedFeatures) -contains 'agent-browser')) {
     Ok 'agent-browser command and config are available'
 }
 
+# Test platform-conditional rule filtering
+$filterTestContent = @'
+# Common header
+
+<!-- :windows-only -->
+## Windows specific
+Windows content
+<!-- :end -->
+
+<!-- :linux-only -->
+## Linux specific
+Linux content
+<!-- :end -->
+
+## Shared footer
+'@
+
+$filtered = $filterTestContent
+# Strip linux-only blocks entirely
+$filtered = [regex]::Replace($filtered, '(?s)<!-- :linux-only -->.*?<!-- :end -->\n?', '')
+# Strip windows-only markers but keep content
+$filtered = [regex]::Replace($filtered, '(?s)<!-- :windows-only -->\n?', '')
+# Strip remaining end markers
+$filtered = [regex]::Replace($filtered, '\n?<!-- :end -->', '')
+
+if ($filtered -notmatch 'Windows specific') { throw 'Windows content was stripped on Windows' }
+if ($filtered -match 'Linux specific') { throw 'Linux content was not stripped on Windows' }
+if ($filtered -match '<!-- :') { throw 'Platform markers leaked through filtering' }
+Ok 'platform-conditional rule filtering strips linux-only blocks on Windows'
+
 pwsh -NoLogo -NoProfile -File (Join-Path $root 'verify-windows.ps1')
 if ($LASTEXITCODE -ne 0) {
     throw "verify-windows failed after behavior smoke with exit code $LASTEXITCODE"

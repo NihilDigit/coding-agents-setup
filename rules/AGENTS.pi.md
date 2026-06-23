@@ -2,6 +2,24 @@
 
 Pi reads user-level defaults from `~/.pi/agent/AGENTS.md`. Repository-local `AGENTS.md` or `CLAUDE.md` still wins when it is narrower.
 
+<!-- :windows-only -->
+
+## Pi Agent on Windows — Tool Path Behavior
+
+On this Windows machine, Pi's `bash` and `read` tools have specific path behavior:
+
+- **Shell environment:** The `bash` tool runs Git Bash (MSYS2/MinGW64, from Git for Windows), not WSL.
+- **Path styles:**
+  - Windows native paths (`C:\...`) work in both `bash` and `read`.
+  - Git Bash paths (`/c/...`) work in `bash` but not `read`.
+  - WSL paths (`/mnt/c/...`) do not work — this machine does not use WSL for agent commands.
+  - Preferred style for `read`: `C:\...`
+  - Preferred styles for `bash`: `C:\...` or `/c/...`
+- **fetch_content temp clones:** The reported path like `\tmp\pi-github-repos\...` is missing the drive letter. The real path is `C:\tmp\pi-github-repos\...`. Add `C:` when using the reported path.
+- **Clone lifetime:** Temp clones from `fetch_content` are cleaned between calls. Do not rely on a cloned directory persisting across sequential `fetch_content` invocations. Use `read` or `bash` immediately, or use the URL directly each time.
+
+<!-- :end -->
+
 ## Core Contract
 
 The primary measure of success is whether the user can reason about the relevant part of the codebase well enough to define, constrain, and review the work.

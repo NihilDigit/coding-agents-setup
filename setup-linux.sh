@@ -76,7 +76,7 @@ join_rules() {
     if [[ "$first" -eq 0 ]]; then
       printf '\n\n'
     fi
-    sed -e '${/^$/d;}' "$script_dir/rules/$file"
+    sed -e '/<!-- :windows-only -->/,/<!-- :end -->/d' -e '/<!-- :linux-only -->/d' -e '/<!-- :end -->/d' -e '${/^$/d;}' "$script_dir/rules/$file"
     first=0
   done
   printf '\n'
