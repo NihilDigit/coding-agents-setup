@@ -18,7 +18,21 @@ rules/AGENTS.windows.md
 rules/CLAUDE.md
 ```
 
-`AGENTS.shared.md` should stay platform-neutral. Put shell aliases, package manager installation details, and platform paths into platform fragments. Put agent-specific directory conventions and runtime notes into adapter fragments.
+`AGENTS.shared.md` should stay platform-neutral by default. Put shell aliases, package manager installation details, and platform paths into platform fragments. Put agent-specific directory conventions and runtime notes into adapter fragments.
+
+Fragments can contain conditional blocks when one shared section needs platform- or agent-specific wording:
+
+```markdown
+<!-- :codex-only -->
+Only included for Codex.
+<!-- :end -->
+
+<!-- :claude-only :pi-only -->
+Included for Claude Code and Pi.
+<!-- :end -->
+```
+
+Supported tags are passed by the setup scripts during composition. Current tags include `windows`, `linux`, `arch`, `codex`, `claude`, and `pi`. A block is kept when any marker tag is active; otherwise the whole block is removed. Marker lines are never emitted into generated rule files.
 
 Linux setup uses:
 

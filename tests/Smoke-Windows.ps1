@@ -117,7 +117,7 @@ if ($state -and (@($state.SelectedFeatures) -contains 'agent-browser')) {
     Ok 'agent-browser command and config are available'
 }
 
-# Test platform-conditional rule filtering
+# Test tag-conditional rule filtering
 $filterTestContent = @'
 # Common header
 
@@ -131,21 +131,54 @@ Windows content
 Linux content
 <!-- :end -->
 
+<!-- :codex-only -->
+Codex browser content
+<!-- :end -->
+
+<!-- :claude-only :pi-only -->
+Agent browser content
+<!-- :end -->
+
 ## Shared footer
 '@
 
-$filtered = $filterTestContent
-# Strip linux-only blocks entirely
-$filtered = [regex]::Replace($filtered, '(?s)<!-- :linux-only -->.*?<!-- :end -->\n?', '')
-# Strip windows-only markers but keep content
-$filtered = [regex]::Replace($filtered, '(?s)<!-- :windows-only -->\n?', '')
-# Strip remaining end markers
-$filtered = [regex]::Replace($filtered, '\n?<!-- :end -->', '')
+function Convert-SmokeRuleTextForTags {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string[]]$ActiveTags
+    )
+
+    $active = @{}
+    foreach ($tag in $ActiveTags) {
+        $active[$tag.ToLowerInvariant()] = $true
+    }
+
+    $pattern = '(?ms)^[ \t]*<!--\s*((?::[a-z0-9-]+-only\s*)+)-->\r?\n?(.*?)^[ \t]*<!--\s*:end\s*-->\r?\n?'
+    return [regex]::Replace($Text, $pattern, {
+        param($match)
+        $markers = [regex]::Matches($match.Groups[1].Value, ':([a-z0-9-]+)-only')
+        foreach ($marker in $markers) {
+            $tag = $marker.Groups[1].Value.ToLowerInvariant()
+            if ($active.ContainsKey($tag)) {
+                return $match.Groups[2].Value
+            }
+        }
+        return ''
+    })
+}
+
+$filtered = Convert-SmokeRuleTextForTags -Text $filterTestContent -ActiveTags @('windows', 'codex')
+$filteredPi = Convert-SmokeRuleTextForTags -Text $filterTestContent -ActiveTags @('windows', 'pi')
 
 if ($filtered -notmatch 'Windows specific') { throw 'Windows content was stripped on Windows' }
 if ($filtered -match 'Linux specific') { throw 'Linux content was not stripped on Windows' }
-if ($filtered -match '<!-- :') { throw 'Platform markers leaked through filtering' }
-Ok 'platform-conditional rule filtering strips linux-only blocks on Windows'
+if ($filtered -notmatch 'Codex browser content') { throw 'Codex content was stripped for Codex' }
+if ($filtered -match 'Agent browser content') { throw 'Non-Codex agent browser content leaked into Codex output' }
+if ($filteredPi -notmatch 'Agent browser content') { throw 'Multi-tag Pi content was stripped for Pi' }
+if ($filteredPi -match 'Codex browser content') { throw 'Codex content leaked into Pi output' }
+if ($filtered -match '<!-- :') { throw 'Conditional markers leaked through Codex filtering' }
+if ($filteredPi -match '<!-- :') { throw 'Conditional markers leaked through Pi filtering' }
+Ok 'tag-conditional rule filtering strips inactive blocks on Windows'
 
 pwsh -NoLogo -NoProfile -File (Join-Path $root 'verify-windows.ps1')
 if ($LASTEXITCODE -ne 0) {

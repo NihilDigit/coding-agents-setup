@@ -90,7 +90,22 @@ Do not use `rtk` when exact raw output is the artifact being inspected, copied, 
 
 For current web facts, use browser/search tooling and cite sources.
 
-For local browser automation, prefer `agent-browser` with the user's real Chrome profile in headed mode. The default user-level agent-browser config should keep:
+<!-- :codex-only -->
+For local browser automation in Codex, prefer the Chrome plugin (`[@chrome](plugin://chrome@openai-bundled)`) when it is available, especially for tasks that depend on the user's real Chrome state or Codex's plugin-specific filtering. Fall back to `agent-browser` only when the Chrome plugin is unavailable or cannot handle the required interaction.
+
+When falling back to `agent-browser`, use the user's real Chrome profile in headed mode. The default user-level agent-browser config should keep:
+
+```json
+{
+  "headed": true,
+  "profile": "Default"
+}
+```
+
+Invoke the fallback with `agent-browser ...`; use `bunx agent-browser ...` only if the global binary is unavailable. This should reuse the user's logged-in Chrome state and show the browser window.
+<!-- :end -->
+<!-- :claude-only :pi-only -->
+For local browser automation in agents without a dedicated Chrome plugin, prefer `agent-browser` with the user's real Chrome profile in headed mode. The default user-level agent-browser config should keep:
 
 ```json
 {
@@ -100,5 +115,6 @@ For local browser automation, prefer `agent-browser` with the user's real Chrome
 ```
 
 Invoke it with `agent-browser ...`; use `bunx agent-browser ...` as a fallback if the global binary is unavailable. This should reuse the user's logged-in Chrome state and show the browser window.
+<!-- :end -->
 
 Keep browser actions read-only by default. Ask before submitting forms, changing settings, sending messages, deleting data, purchasing, or touching account-sensitive state.

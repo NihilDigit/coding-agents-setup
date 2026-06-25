@@ -152,26 +152,52 @@ function Backup-Path {
 }
 
 function Get-RuleText {
-    param([Parameter(Mandatory = $true)][string[]]$Names)
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Names,
+        [Parameter(Mandatory = $true)][string[]]$ActiveTags
+    )
     $parts = foreach ($name in $Names) {
         $path = Join-Path $ScriptRoot (Join-Path 'rules' $name)
         if (-not (Test-Path -LiteralPath $path)) { throw "Missing rule file: $path" }
         $text = (Get-Content -LiteralPath $path -Raw).Trim()
-        # Strip linux-only blocks, keep windows-only blocks
-        $text = [regex]::Replace($text, '(?s)<!-- :linux-only -->.*?<!-- :end -->\n?', '')
-        $text = [regex]::Replace($text, '(?s)<!-- :windows-only -->\n?', '')
-        $text = [regex]::Replace($text, '\n?<!-- :end -->', '')
-        $text
+        Convert-RuleTextForTags -Text $text -ActiveTags $ActiveTags
     }
     return ($parts -join "`n`n")
+}
+
+function Convert-RuleTextForTags {
+    param(
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string[]]$ActiveTags
+    )
+
+    $active = @{}
+    foreach ($tag in $ActiveTags) {
+        $active[$tag.ToLowerInvariant()] = $true
+    }
+
+    $pattern = '(?ms)^[ \t]*<!--\s*((?::[a-z0-9-]+-only\s*)+)-->\r?\n?(.*?)^[ \t]*<!--\s*:end\s*-->\r?\n?'
+    return [regex]::Replace($Text, $pattern, {
+        param($match)
+        $markers = [regex]::Matches($match.Groups[1].Value, ':([a-z0-9-]+)-only')
+        foreach ($marker in $markers) {
+            $tag = $marker.Groups[1].Value.ToLowerInvariant()
+            if ($active.ContainsKey($tag)) {
+                return $match.Groups[2].Value
+            }
+        }
+        return ''
+    })
 }
 
 function Write-AgentRules {
     param([Parameter(Mandatory = $true)][string]$Target)
 
     $sharedFiles = @('AGENTS.shared.md')
+    $platformTags = @()
     if ($IsWindows -or $env:OS -eq 'Windows_NT') {
         $sharedFiles += 'AGENTS.windows.md'
+        $platformTags += 'windows'
     }
 
     if ($Target -eq 'Codex' -or $Target -eq 'All') {
@@ -180,7 +206,7 @@ function Write-AgentRules {
         New-Item -ItemType Directory -Force -Path $codexDir | Out-Null
         $backup = Backup-Path $codexPath
         if ($backup) { Write-Host "Backed up $codexPath -> $backup" }
-        $text = Get-RuleText ($sharedFiles + 'AGENTS.codex.md')
+        $text = Get-RuleText -Names ($sharedFiles + 'AGENTS.codex.md') -ActiveTags ($platformTags + 'codex')
         Set-TextFileLf -Path $codexPath -Text $text
         Write-Host "Wrote $codexPath"
     }
@@ -191,7 +217,7 @@ function Write-AgentRules {
         New-Item -ItemType Directory -Force -Path $claudeDir | Out-Null
         $backup = Backup-Path $claudePath
         if ($backup) { Write-Host "Backed up $claudePath -> $backup" }
-        $text = Get-RuleText ($sharedFiles + 'CLAUDE.md')
+        $text = Get-RuleText -Names ($sharedFiles + 'CLAUDE.md') -ActiveTags ($platformTags + 'claude')
         Set-TextFileLf -Path $claudePath -Text $text
         Write-Host "Wrote $claudePath"
     }
@@ -202,7 +228,7 @@ function Write-AgentRules {
         New-Item -ItemType Directory -Force -Path $piDir | Out-Null
         $backup = Backup-Path $piPath
         if ($backup) { Write-Host "Backed up $piPath -> $backup" }
-        $text = Get-RuleText ($sharedFiles + 'AGENTS.pi.md')
+        $text = Get-RuleText -Names ($sharedFiles + 'AGENTS.pi.md') -ActiveTags ($platformTags + 'pi')
         Set-TextFileLf -Path $piPath -Text $text
         Write-Host "Wrote $piPath"
 

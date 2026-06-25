@@ -52,6 +52,8 @@ Linux:
 curl -fsSL https://raw.githubusercontent.com/NihilDigit/coding-agents-setup/main/install.sh | bash
 ```
 
+The Linux bootstrap prompts for the target agent when a terminal is available. For non-interactive runs, set `AGENT=codex`, `AGENT=claude`, `AGENT=pi`, `AGENT=all`, or `AGENT=none`.
+
 From a checkout:
 
 ```powershell

@@ -67,6 +67,8 @@ linux_rule_files() {
 }
 
 join_rules() {
+  local active_tags="$1"
+  shift
   local first=1
   for file in "$@"; do
     if [[ ! -f "$script_dir/rules/$file" ]]; then
@@ -76,10 +78,63 @@ join_rules() {
     if [[ "$first" -eq 0 ]]; then
       printf '\n\n'
     fi
-    sed -e '/<!-- :windows-only -->/,/<!-- :end -->/d' -e '/<!-- :linux-only -->/d' -e '/<!-- :end -->/d' -e '${/^$/d;}' "$script_dir/rules/$file"
+    filter_rule_file "$active_tags" "$script_dir/rules/$file" | sed -e '${/^$/d;}'
     first=0
   done
   printf '\n'
+}
+
+filter_rule_file() {
+  local active_tags="$1"
+  local path="$2"
+  awk -v active_csv="$active_tags" '
+    BEGIN {
+      split(active_csv, tags, ",")
+      for (i in tags) {
+        if (tags[i] != "") active[tags[i]] = 1
+      }
+      in_block = 0
+      keep_block = 1
+    }
+    function is_condition_marker(line) {
+      return line ~ /^[[:space:]]*<!--[[:space:]]*(:[[:alnum:]-]+-only[[:space:]]*)+-->[[:space:]]*$/
+    }
+    function is_end_marker(line) {
+      return line ~ /^[[:space:]]*<!--[[:space:]]*:end[[:space:]]*-->[[:space:]]*$/
+    }
+    {
+      if (is_condition_marker($0)) {
+        condition = $0
+        sub(/^[[:space:]]*<!--[[:space:]]*/, "", condition)
+        sub(/[[:space:]]*-->[[:space:]]*$/, "", condition)
+        count = split(condition, parts, /[[:space:]]+/)
+        keep_block = 0
+        for (i = 1; i <= count; i++) {
+          tag = parts[i]
+          sub(/^:/, "", tag)
+          sub(/-only$/, "", tag)
+          if (tag in active) keep_block = 1
+        }
+        in_block = 1
+        next
+      }
+      if (is_end_marker($0)) {
+        in_block = 0
+        keep_block = 1
+        next
+      }
+      if (!in_block || keep_block) print
+    }
+  ' "$path"
+}
+
+active_tags_for() {
+  local agent_name="$1"
+  local tags="linux,$agent_name"
+  if is_arch_like; then
+    tags="$tags,arch"
+  fi
+  printf '%s\n' "$tags"
 }
 
 backup_file() {
@@ -97,7 +152,7 @@ write_codex() {
   mkdir -p -- "$dir"
   backup_file "$path"
   mapfile -t base_rules < <(linux_rule_files)
-  join_rules "${base_rules[@]}" AGENTS.codex.md AGENTS.linux-initial-setup.md > "$path"
+  join_rules "$(active_tags_for codex)" "${base_rules[@]}" AGENTS.codex.md AGENTS.linux-initial-setup.md > "$path"
   echo "Wrote $path"
 }
 
@@ -107,7 +162,7 @@ write_claude() {
   mkdir -p -- "$dir"
   backup_file "$path"
   mapfile -t base_rules < <(linux_rule_files)
-  join_rules "${base_rules[@]}" CLAUDE.md AGENTS.linux-initial-setup.md > "$path"
+  join_rules "$(active_tags_for claude)" "${base_rules[@]}" CLAUDE.md AGENTS.linux-initial-setup.md > "$path"
   echo "Wrote $path"
 }
 
@@ -117,7 +172,7 @@ write_pi() {
   mkdir -p -- "$dir"
   backup_file "$path"
   mapfile -t base_rules < <(linux_rule_files)
-  join_rules "${base_rules[@]}" AGENTS.pi.md AGENTS.linux-initial-setup.md > "$path"
+  join_rules "$(active_tags_for pi)" "${base_rules[@]}" AGENTS.pi.md AGENTS.linux-initial-setup.md > "$path"
   echo "Wrote $path"
 
   local ext_source="$script_dir/configs/pi/extensions/pi-footer.ts"
@@ -136,19 +191,26 @@ select_agent() {
     printf '%s\n' "$agent"
     return
   fi
-  if [[ ! -t 0 ]]; then
+
+  local tty_fd
+  if ! { exec {tty_fd}<>/dev/tty; } 2>/dev/null; then
+    printf '%s\n' "No interactive terminal available; writing no agent files. Pass --agent codex|claude|pi|all to choose explicitly." >&2
     printf '%s\n' "none"
     return
   fi
 
-  printf '%s\n' 'Which coding agent should be configured?'
-  printf '%s\n' '  1. Codex'
-  printf '%s\n' '  2. Claude Code'
-  printf '%s\n' '  3. Pi'
-  printf '%s\n' '  4. All (Codex + Claude + Pi)'
-  printf '%s\n' '  5. Write no agent files'
-  printf '%s' 'Select [1-5] (default: 3): '
-  read -r answer
+  printf '%s\n' 'Which coding agent should be configured?' >&"$tty_fd"
+  printf '%s\n' '  1. Codex' >&"$tty_fd"
+  printf '%s\n' '  2. Claude Code' >&"$tty_fd"
+  printf '%s\n' '  3. Pi' >&"$tty_fd"
+  printf '%s\n' '  4. All (Codex + Claude + Pi)' >&"$tty_fd"
+  printf '%s\n' '  5. Write no agent files' >&"$tty_fd"
+  printf '%s' 'Select [1-5] (default: 3): ' >&"$tty_fd"
+
+  local answer
+  IFS= read -r answer <&"$tty_fd" || answer=""
+  exec {tty_fd}<&-
+
   case "$answer" in
     1) printf '%s\n' 'codex' ;;
     2) printf '%s\n' 'claude' ;;

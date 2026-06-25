@@ -19,7 +19,12 @@ Then ask before doing any of these:
 - Install language tooling: `bun`/`bunx`, `uv`/`uvx`, project-specific Node/Python tooling, or any pinned project toolchain.
 - Configure Agent Skills: keep user-installed skills in `~/.agents/skills`; add shell or symlink integration only after confirming what the target agent expects on that machine.
 - Configure trash behavior: prefer a platform trash CLI such as `trash`, `trash-put`, `gio trash`, or the desktop environment's trash tool; do not alias `rm` until the user explicitly accepts the behavior.
+<!-- :codex-only -->
+- Configure fallback `agent-browser` support for Codex only if the user wants a CLI fallback when the Chrome plugin is unavailable: install it with the local JavaScript toolchain, run `agent-browser install` after install, and keep `~/.agent-browser/config.json` set to `{"headed": true, "profile": "Default"}` unless the user asks for different browser behavior.
+<!-- :end -->
+<!-- :claude-only :pi-only -->
 - Configure `agent-browser`: install it with the local JavaScript toolchain, run `agent-browser install` after install, and keep `~/.agent-browser/config.json` set to `{"headed": true, "profile": "Default"}` unless the user asks for different browser behavior.
+<!-- :end -->
 - Write shell startup changes: inspect the active shell first and ask before editing `.bashrc`, `.zshrc`, fish config, or profile files.
 - Add local machine notes: keep SDK paths, attached device IDs, package inventories, and desktop-specific behavior in a private local note or machine-local rule file, not in shared repository rules.
 
